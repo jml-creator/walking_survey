@@ -87,6 +87,24 @@ label{font-size:12px;color:var(--t2);display:block;margin:10px 0 3px}
 <label>소속</label>
 <input type="text" id="sOrg" placeholder="연세대 도시설계">
 <div class="cd" style="margin-top:14px">
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">GoPro MAX 2 카메라 배정</div>
+<div style="font-size:10px;color:var(--t3);line-height:1.5;margin-bottom:8px">이 서베이어가 사용할 카메라 번호를 선택하세요.<br>싱크 시 카메라 영상과 서베이 데이터가 자동 매칭됩니다.</div>
+<div style="display:flex;gap:6px">
+<label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent" id="camLabel1">
+<input type="radio" name="camNum" value="1" id="camR1" style="accent-color:var(--blue)">
+<div><div style="font-size:12px;font-weight:600">CAM 1</div><div style="font-size:9px;color:var(--t3)">카메라 A</div></div>
+</label>
+<label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent" id="camLabel2">
+<input type="radio" name="camNum" value="2" id="camR2" style="accent-color:var(--blue)">
+<div><div style="font-size:12px;font-weight:600">CAM 2</div><div style="font-size:9px;color:var(--t3)">카메라 B</div></div>
+</label>
+<label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent" id="camLabelN">
+<input type="radio" name="camNum" value="0" id="camRN" style="accent-color:var(--t3)">
+<div><div style="font-size:12px;font-weight:600">없음</div><div style="font-size:9px;color:var(--t3)">카메라 미사용</div></div>
+</label>
+</div>
+</div>
+<div class="cd" style="margin-top:14px">
 <div style="font-size:12px;font-weight:600;margin-bottom:6px">데이터 저장</div>
 <div id="dbxCard" style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px">
 <span style="font-size:11px" id="dbxStatus">✓ 팀 Dropbox 자동 저장</span>
@@ -141,16 +159,14 @@ label{font-size:12px;color:var(--t2);display:block;margin:10px 0 3px}
 <div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxS">--</div><div style="color:var(--t3);font-size:8px">일사W</div></div>
 </div>
 </div>
-<div class="cd" style="padding:10px 12px;margin-top:8px">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:11px;font-weight:600">GoPro MAX 2</div><button onclick="scanGoPro()" id="gpBtn" style="background:#378ADD22;color:var(--blue);border:none;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:600;cursor:pointer">검색</button></div>
-<div style="font-size:10px;color:var(--t3);line-height:1.7;margin-bottom:6px;padding:6px 8px;background:var(--bg);border-radius:6px">
+<div class="cd" style="padding:10px 12px;margin-top:8px" id="camCard">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:11px;font-weight:600">GoPro MAX 2</div><div style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px" id="camBadge">미설정</div></div>
+<div style="font-size:10px;color:var(--t3);line-height:1.7;padding:6px 8px;background:var(--bg);border-radius:6px">
 <div style="margin-bottom:2px;font-weight:600;color:var(--t2)">촬영 전 체크리스트</div>
 ① Quik 앱으로 카메라 연결 (시간 자동 동기화)<br>
 ② The Remote으로 2대 동시 촬영 시작<br>
 ③ 아래 서베이 시작 버튼 탭
 </div>
-<div style="display:flex;gap:6px"><div style="flex:1;padding:5px 8px;background:var(--bg);border-radius:6px;font-size:10px"><span id="cAN" style="font-weight:600;color:var(--t2)">CAM A</span> <span id="cAS" style="color:var(--t3)">대기</span> <span id="cAB" style="color:var(--t3);float:right">--</span></div>
-<div style="flex:1;padding:5px 8px;background:var(--bg);border-radius:6px;font-size:10px"><span id="cBN" style="font-weight:600;color:var(--t2)">CAM B</span> <span id="cBS" style="color:var(--t3)">대기</span> <span id="cBB" style="color:var(--t3);float:right">--</span></div></div>
 </div>
 <button class="btn bp" onclick="startSurvey()" style="margin-top:10px">서베이 시작</button>
 <div id="cloudProjSec" style="margin-top:14px;display:none">
@@ -258,7 +274,7 @@ label{font-size:12px;color:var(--t2);display:block;margin:10px 0 3px}
 let on=false,t0=0,elap=0,dist=0,route=[],notes=[],ivs=[],surveys=[],dbTk=[];
 let wId=null,tI=null,voiceOn=false,recog=null,ivOn=false,mr=null,ivChunks=[],ivT0=0,ivTI=null;
 let dbCtx=null,dbAn=null,dbStr=null,dbOn=false,dbOff=0,dbHist=[],dbCI=null;
-let wx=null,proj={name:'',site:'',res:'',date:''};
+let wx=null,proj={name:'',site:'',res:'',date:'',cam:0};
 let map=null,rLine=null,posM=null,nMarkers=[],mapBig=false;
 const MC={voice:'#378ADD',quick:'#1D9E75',photo:'#BA7517',interview:'#D4537E',survey:'#7F77DD'};
 let cams=[{id:'A',dev:null,srv:null,qc:null,ok:false,rec:false,bat:null,nm:'CAM A'},{id:'B',dev:null,srv:null,qc:null,ok:false,rec:false,bat:null,nm:'CAM B'}];
@@ -268,10 +284,11 @@ let pollI=null,saveCnt=0;
 function go(id,b){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));document.getElementById(id).classList.add('on');b.classList.add('on');if(id==='p5')updSum();if(id==='p3')updSF();}
 
 // ═══ SETUP ═══
+function updCamBadge(){const b=document.getElementById('camBadge');if(!b)return;const c=proj.cam||0;if(c>0){b.textContent=`CAM ${c}`;b.style.background='#378ADD22';b.style.color='var(--blue)';}else{b.textContent='미설정';b.style.background='var(--bg)';b.style.color='var(--t3)';}}
 (function(){
   const r=ls('researcher');
   if(!r){document.getElementById('setup').style.display='block';document.getElementById('start').style.display='none';}
-  else{const d=JSON.parse(r);proj.res=d.name;document.getElementById('setup').style.display='none';document.getElementById('start').style.display='block';document.getElementById('resD').textContent=`${d.name}${d.org?' · '+d.org:''}`;initStart();}
+  else{const d=JSON.parse(r);proj.res=d.name;proj.cam=parseInt(d.cam||'0');document.getElementById('setup').style.display='none';document.getElementById('start').style.display='block';document.getElementById('resD').textContent=`${d.name}${d.org?' · '+d.org:''}`;updCamBadge();initStart();}
   try{dbOff=parseFloat(ls('dbOff'))||0;}catch(e){}
 })();
 function ls(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -284,16 +301,18 @@ function saveSetup(){
   const folder=document.getElementById('sFolder').value.trim()||'/WalkingSurvey';
   const form=document.getElementById('sForm').value.trim();
   const fe={p:document.getElementById('feProj').value.trim(),r:document.getElementById('feRes').value.trim(),g:document.getElementById('feGps').value.trim(),t:document.getElementById('feTime').value.trim(),w:document.getElementById('feWx').value.trim()};
-  lsSet('researcher',JSON.stringify({name:nm,org:o,folder,form,fe}));
-  proj.res=nm;
+  const camNum=document.querySelector('input[name=camNum]:checked')?.value||'0';
+  lsSet('researcher',JSON.stringify({name:nm,org:o,folder,form,fe,cam:camNum}));
+  proj.res=nm;proj.cam=parseInt(camNum);
   document.getElementById('setup').style.display='none';
   document.getElementById('start').style.display='block';
   document.getElementById('resD').textContent=`${nm}${o?' · '+o:''}`;
+  updCamBadge();
   initStart();
 }
 function showSetup(){
   document.getElementById('start').style.display='none';document.getElementById('active').style.display='none';document.getElementById('setup').style.display='block';
-  try{const d=JSON.parse(ls('researcher')||'{}');document.getElementById('sName').value=d.name||'';document.getElementById('sOrg').value=d.org||'';document.getElementById('sFolder').value=d.folder||'/WalkingSurvey';document.getElementById('sForm').value=d.form||'';if(d.fe){document.getElementById('feProj').value=d.fe.p||'';document.getElementById('feRes').value=d.fe.r||'';document.getElementById('feGps').value=d.fe.g||'';document.getElementById('feTime').value=d.fe.t||'';document.getElementById('feWx').value=d.fe.w||'';}}catch(e){}
+  try{const d=JSON.parse(ls('researcher')||'{}');document.getElementById('sName').value=d.name||'';document.getElementById('sOrg').value=d.org||'';document.getElementById('sFolder').value=d.folder||'/WalkingSurvey';document.getElementById('sForm').value=d.form||'';if(d.fe){document.getElementById('feProj').value=d.fe.p||'';document.getElementById('feRes').value=d.fe.r||'';document.getElementById('feGps').value=d.fe.g||'';document.getElementById('feTime').value=d.fe.t||'';document.getElementById('feWx').value=d.fe.w||'';}const cv=d.cam||'0';const cr=document.querySelector(`input[name=camNum][value="${cv}"]`);if(cr)cr.checked=true;}catch(e){}
   document.getElementById('dbxStatus').textContent=isDbxConnected()?'✓ 팀 Dropbox 자동 저장':'⚙ 배포 시 Dropbox 설정 필요';
   document.getElementById('dbxStatus').style.color=isDbxConnected()?'var(--green)':'var(--t3)';
 }
@@ -494,7 +513,7 @@ function startSurvey(){
   renderTags();renderRecent();
 }
 function stopSurvey(){if(!confirm(`서베이를 종료합니다.\n\n${notes.length}건 기록 · ${ivs.length}건 인터뷰 · ${(dist/1000).toFixed(2)}km\n\nDropbox에 자동 저장됩니다.\n종료하시겠습니까?`))return;on=false;if(wId)navigator.geolocation.clearWatch(wId);clearInterval(tI);if(dbCI){clearInterval(dbCI);dbCI=null;}if(pollI)clearInterval(pollI);if(dbOn){dbOn=false;if(dbStr)dbStr.getTracks().forEach(t=>t.stop());if(dbCtx)dbCtx.close();}saveP();cloudSync();ivs.forEach((v,i)=>cloudUpIV(v,i));go('p5',document.querySelectorAll('.tabs button')[3]);}
-function resetSurvey(){if(!confirm('새 서베이를 시작합니다.\n현재 데이터는 저장되어 있습니다.'))return;saveP();t0=0;elap=0;dist=0;notes=[];ivs=[];surveys=[];dbTk=[];route=[];proj={name:'',site:'',res:proj.res,date:''};saveCnt=0;if(rLine)rLine.setLatLngs([]);nMarkers.forEach(m=>{if(map)map.removeLayer(m)});nMarkers=[];document.getElementById('active').style.display='none';document.getElementById('start').style.display='block';document.getElementById('hdrStats').style.display='none';document.getElementById('hdrTitle').textContent='Walking Survey';document.getElementById('projN').value='';detectLoc();loadSaved();}
+function resetSurvey(){if(!confirm('새 서베이를 시작합니다.\n현재 데이터는 저장되어 있습니다.'))return;saveP();t0=0;elap=0;dist=0;notes=[];ivs=[];surveys=[];dbTk=[];route=[];proj={name:'',site:'',res:proj.res,date:'',cam:proj.cam};saveCnt=0;if(rLine)rLine.setLatLngs([]);nMarkers.forEach(m=>{if(map)map.removeLayer(m)});nMarkers=[];document.getElementById('active').style.display='none';document.getElementById('start').style.display='block';document.getElementById('hdrStats').style.display='none';document.getElementById('hdrTitle').textContent='Walking Survey';document.getElementById('projN').value='';detectLoc();loadSaved();}
 
 function updTimer(){elap=Date.now()-t0;const s=Math.floor(elap/1000),m=Math.floor(s/60);document.getElementById('elap').textContent=`${m}:${String(s%60).padStart(2,'0')}`;}
 function fmtT(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${String(s%60).padStart(2,'0')}`;}
@@ -544,7 +563,7 @@ function toggleContDB(){if(document.getElementById('dbCont').checked){if(!dbOn)t
 
 // ═══ EXPORT ═══
 function safeFn(s){return(s||'survey').replace(/[^a-zA-Z0-9가-힣_-]/g,'_').replace(/_+/g,'_');}
-function buildGJ(){const fs=[];if(route.length>1)fs.push({type:"Feature",geometry:{type:"LineString",coordinates:route.map(p=>[p.lng,p.lat])},properties:{type:"route",distance_m:Math.round(dist),duration_ms:elap}});notes.forEach(n=>{const pr={type:n.type,elapsed_ms:n.elap,transcript:n.transcript||'',tags:(n.tags||[]).map(t=>t.tag||t),timestamp:new Date(n.time).toISOString()};if(n.photo)pr.has_photo=true;fs.push({type:"Feature",geometry:{type:"Point",coordinates:[n.lng,n.lat]},properties:pr});});ivs.forEach((v,i)=>{fs.push({type:"Feature",geometry:{type:"Point",coordinates:[v.lng,v.lat]},properties:{type:"interview",audio_file:`${safeFn(proj.name)}_${safeFn(proj.res)}_iv${i+1}.${v.ext}`,role:v.role,age_group:v.age,memo:v.memo,duration_ms:v.dur,timestamp:new Date(v.time).toISOString()}});});surveys.forEach(s=>{fs.push({type:"Feature",geometry:{type:"Point",coordinates:[s.lng,s.lat]},properties:{type:"survey",timestamp:new Date(s.time).toISOString()}});});if(dbTk.length>1)fs.push({type:"Feature",geometry:{type:"LineString",coordinates:dbTk.map(d=>[d.lng,d.lat])},properties:{type:"noise_track",db_values:dbTk.map(d=>d.db),timestamps:dbTk.map(d=>new Date(d.time).toISOString())}});return{type:"FeatureCollection",properties:{project:proj.name,site:proj.site,researcher:proj.res,date:proj.date,started_at:proj.startedAt,total_distance_m:Math.round(dist),total_duration_ms:elap,weather:wx||null,exported_at:new Date().toISOString()},features:fs};}
+function buildGJ(){const fs=[];if(route.length>1)fs.push({type:"Feature",geometry:{type:"LineString",coordinates:route.map(p=>[p.lng,p.lat])},properties:{type:"route",distance_m:Math.round(dist),duration_ms:elap}});notes.forEach(n=>{const pr={type:n.type,elapsed_ms:n.elap,transcript:n.transcript||'',tags:(n.tags||[]).map(t=>t.tag||t),timestamp:new Date(n.time).toISOString()};if(n.photo)pr.has_photo=true;fs.push({type:"Feature",geometry:{type:"Point",coordinates:[n.lng,n.lat]},properties:pr});});ivs.forEach((v,i)=>{fs.push({type:"Feature",geometry:{type:"Point",coordinates:[v.lng,v.lat]},properties:{type:"interview",audio_file:`${safeFn(proj.name)}_${safeFn(proj.res)}_iv${i+1}.${v.ext}`,role:v.role,age_group:v.age,memo:v.memo,duration_ms:v.dur,timestamp:new Date(v.time).toISOString()}});});surveys.forEach(s=>{fs.push({type:"Feature",geometry:{type:"Point",coordinates:[s.lng,s.lat]},properties:{type:"survey",timestamp:new Date(s.time).toISOString()}});});if(dbTk.length>1)fs.push({type:"Feature",geometry:{type:"LineString",coordinates:dbTk.map(d=>[d.lng,d.lat])},properties:{type:"noise_track",db_values:dbTk.map(d=>d.db),timestamps:dbTk.map(d=>new Date(d.time).toISOString())}});return{type:"FeatureCollection",properties:{project:proj.name,site:proj.site,researcher:proj.res,camera:proj.cam||0,date:proj.date,started_at:proj.startedAt,total_distance_m:Math.round(dist),total_duration_ms:elap,weather:wx||null,exported_at:new Date().toISOString()},features:fs};}
 function exportGJ(){}
 function exportIV(){}
 let resMap=null;
@@ -620,7 +639,7 @@ async function cloudSync(){if(!isDbxConnected()){console.warn('cloudSync: not co
 // 1. GeoJSON (경로+태그+메모+인터뷰위치+설문위치)
 const gj=buildGJ();await dbxUp(new Blob([JSON.stringify(gj,null,2)],{type:'application/json'}),`${f}/${pn}/${rn}_${proj.date}.geojson`);
 // 2. 종합 요약 JSON
-const summary={project:proj.name,site:proj.site,researcher:proj.res,date:proj.date,started_at:proj.startedAt,weather:wx||null,total_distance_m:Math.round(dist),total_duration_ms:elap,total_duration_str:fmtT(elap),notes_count:notes.length,interviews_count:ivs.length,surveys_count:surveys.length,photos_count:notes.filter(n=>n.type==='photo').length,voice_count:notes.filter(n=>n.type==='voice').length,tags_count:notes.filter(n=>n.type==='quick').length,avg_db:dbTk.length?Math.round(dbTk.reduce((a,d)=>a+d.db,0)/dbTk.length):null,
+const summary={project:proj.name,site:proj.site,researcher:proj.res,camera:proj.cam||0,date:proj.date,started_at:proj.startedAt,weather:wx||null,total_distance_m:Math.round(dist),total_duration_ms:elap,total_duration_str:fmtT(elap),notes_count:notes.length,interviews_count:ivs.length,surveys_count:surveys.length,photos_count:notes.filter(n=>n.type==='photo').length,voice_count:notes.filter(n=>n.type==='voice').length,tags_count:notes.filter(n=>n.type==='quick').length,avg_db:dbTk.length?Math.round(dbTk.reduce((a,d)=>a+d.db,0)/dbTk.length):null,
 tags_summary:(()=>{const tc={};notes.forEach(n=>(n.tags||[]).forEach(t=>{const tg=t.tag||t;tc[tg]=(tc[tg]||0)+1;}));return tc;})(),
 voice_transcripts:notes.filter(n=>n.type==='voice'&&n.transcript).map(n=>({time:new Date(n.time).toISOString(),elapsed:fmtT(n.elap),text:n.transcript,tags:(n.tags||[]).map(t=>t.tag||t),lat:n.lat,lng:n.lng})),
 interviews:ivs.map((v,i)=>({id:i+1,role:v.role,age:v.age,memo:v.memo,duration_ms:v.dur,duration_str:fmtT(v.dur),file:`interviews/${rn}_iv${i+1}_${v.role}.${v.ext}`,lat:v.lat,lng:v.lng,timestamp:new Date(v.time).toISOString()})),
