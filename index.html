@@ -607,7 +607,24 @@ function dlFB(b,fn){const u=URL.createObjectURL(b),a=document.createElement('a')
 
 // ═══ CLOUD ═══
 async function dbxUp(blob,path){const tk=await getDbx();if(!tk)return false;try{const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Dropbox-API-Arg':JSON.stringify({path,mode:'overwrite',autorename:false,mute:true}),'Content-Type':'application/octet-stream'},body:blob});return r.ok;}catch(e){return false;}}
-async function cloudSync(){if(!isDbxConnected())return;const f=getFolder();const pn=safeFn(proj.name);const gj=buildGJ();const b=new Blob([JSON.stringify(gj,null,2)],{type:'application/json'});await dbxUp(b,`${f}/${pn}/${safeFn(proj.res)}_${proj.date}.geojson`);await cloudUpPhotos();await cloudUpInterviews();}
+async function cloudSync(){if(!isDbxConnected())return;const f=getFolder();const pn=safeFn(proj.name);const rn=safeFn(proj.res);
+// 1. GeoJSON (경로+태그+메모+인터뷰위치+설문위치)
+const gj=buildGJ();await dbxUp(new Blob([JSON.stringify(gj,null,2)],{type:'application/json'}),`${f}/${pn}/${rn}_${proj.date}.geojson`);
+// 2. 종합 요약 JSON
+const summary={project:proj.name,site:proj.site,researcher:proj.res,date:proj.date,started_at:proj.startedAt,weather:wx||null,total_distance_m:Math.round(dist),total_duration_ms:elap,total_duration_str:fmtT(elap),notes_count:notes.length,interviews_count:ivs.length,surveys_count:surveys.length,photos_count:notes.filter(n=>n.type==='photo').length,voice_count:notes.filter(n=>n.type==='voice').length,tags_count:notes.filter(n=>n.type==='quick').length,avg_db:dbTk.length?Math.round(dbTk.reduce((a,d)=>a+d.db,0)/dbTk.length):null,
+tags_summary:(()=>{const tc={};notes.forEach(n=>(n.tags||[]).forEach(t=>{const tg=t.tag||t;tc[tg]=(tc[tg]||0)+1;}));return tc;})(),
+voice_transcripts:notes.filter(n=>n.type==='voice'&&n.transcript).map(n=>({time:new Date(n.time).toISOString(),elapsed:fmtT(n.elap),text:n.transcript,tags:(n.tags||[]).map(t=>t.tag||t),lat:n.lat,lng:n.lng})),
+interviews:ivs.map((v,i)=>({id:i+1,role:v.role,age:v.age,memo:v.memo,duration_ms:v.dur,duration_str:fmtT(v.dur),file:`interviews/${rn}_iv${i+1}_${v.role}.${v.ext}`,lat:v.lat,lng:v.lng,timestamp:new Date(v.time).toISOString()})),
+surveys:surveys.map(s=>({lat:s.lat,lng:s.lng,timestamp:new Date(s.time).toISOString()})),
+noise_track:dbTk.length?{count:dbTk.length,avg_db:Math.round(dbTk.reduce((a,d)=>a+d.db,0)/dbTk.length),max_db:Math.max(...dbTk.map(d=>d.db)),min_db:Math.min(...dbTk.map(d=>d.db))}:null,
+exported_at:new Date().toISOString()};
+await dbxUp(new Blob([JSON.stringify(summary,null,2)],{type:'application/json'}),`${f}/${pn}/${rn}_${proj.date}_summary.json`);
+// 3. 태그 상세 CSV
+if(notes.some(n=>(n.tags||[]).length)){let csv='시간,경과,유형,태그,카테고리,메모,위도,경도\n';notes.forEach(n=>{(n.tags||[]).forEach(t=>{csv+=`${new Date(n.time).toISOString()},${fmtT(n.elap)},${n.type},${t.tag||t},${t.category||''},${(n.transcript||'').replace(/,/g,' ')},${n.lat},${n.lng}\n`;});});await dbxUp(new Blob(['\uFEFF'+csv],{type:'text/csv'}),`${f}/${pn}/${rn}_${proj.date}_tags.csv`);}
+// 4. 음성 메모 텍스트
+const voiceNotes=notes.filter(n=>n.type==='voice'&&n.transcript);if(voiceNotes.length){let txt=`${proj.name} — 음성 메모\n조사자: ${proj.res} | 날짜: ${proj.date}\n${'='.repeat(40)}\n\n`;voiceNotes.forEach(n=>{txt+=`[${fmtT(n.elap)}] ${n.transcript}\n  태그: ${(n.tags||[]).map(t=>t.tag||t).join(', ')||'없음'}\n  위치: ${n.lat?.toFixed(5)}, ${n.lng?.toFixed(5)}\n\n`;});await dbxUp(new Blob([txt],{type:'text/plain'}),`${f}/${pn}/${rn}_${proj.date}_voice_memos.txt`);}
+// 5. 사진 + 인터뷰 파일
+await cloudUpPhotos();await cloudUpInterviews();}
 async function cloudUpPhotos(){if(!isDbxConnected())return;const f=getFolder();const pn=safeFn(proj.name);for(let i=0;i<notes.length;i++){const n=notes[i];if(n.type!=='photo'||!n.photo||n._uploaded)continue;try{const resp=await fetch(n.photo);const blob=await resp.blob();const ext=n.photo.startsWith('data:image/png')?'png':'jpg';const ok=await dbxUp(blob,`${f}/${pn}/photos/${safeFn(proj.res)}_photo${i+1}.${ext}`);if(ok)n._uploaded=true;}catch(e){console.warn('photo upload fail:',e);}}}
 async function cloudUpInterviews(){if(!isDbxConnected())return;const f=getFolder();const pn=safeFn(proj.name);for(let i=0;i<ivs.length;i++){const v=ivs[i];if(v._uploaded)continue;try{const ok=await dbxUp(v.blob,`${f}/${pn}/interviews/${safeFn(proj.res)}_iv${i+1}_${v.role}.${v.ext}`);if(ok)v._uploaded=true;}catch(e){console.warn('iv upload fail:',e);}}}
 async function cloudUpIV(v,i){if(!isDbxConnected())return;const f=getFolder();await dbxUp(v.blob,`${f}/${safeFn(proj.name)}/interviews/${safeFn(proj.res)}_iv${i+1}_${v.role}.${v.ext}`);}
