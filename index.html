@@ -324,7 +324,7 @@ var DBX_REFRESH_TOKEN = 'YOUR_REFRESH_TOKEN_HERE';
 // ──────────────────────────────────────────────────
 
 function getFolder(){return '';}  // App Folder 모드: 루트 = 앱 전용 폴더
-function isDbxConnected(){return DBX_APP_KEY!=='YOUR_APP_KEY_HERE'&&DBX_REFRESH_TOKEN!=='YOUR_REFRESH_TOKEN_HERE';}
+function isDbxConnected(){return DBX_APP_KEY.length>10&&DBX_REFRESH_TOKEN.length>10;}
 
 let _dbxToken='',_dbxExpiry=0;
 async function getDbx(){
