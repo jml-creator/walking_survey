@@ -609,8 +609,8 @@ function dlBlob(b,fn){if(navigator.share&&navigator.canShare){const f=new File([
 function dlFB(b,fn){const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),5000);}
 
 // ═══ CLOUD ═══
-async function dbxUp(blob,path){const tk=await getDbx();if(!tk)return false;try{const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Dropbox-API-Arg':JSON.stringify({path,mode:'overwrite',autorename:false,mute:true}),'Content-Type':'application/octet-stream'},body:blob});return r.ok;}catch(e){return false;}}
-async function cloudSync(){if(!isDbxConnected())return;const f=getFolder();const pn=safeFn(proj.name);const rn=safeFn(proj.res);
+async function dbxUp(blob,path){const tk=await getDbx();if(!tk){console.warn('dbxUp: no token');return false;}try{const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Dropbox-API-Arg':JSON.stringify({path,mode:'overwrite',autorename:false,mute:true}),'Content-Type':'application/octet-stream'},body:blob});if(!r.ok){const e=await r.text().catch(()=>'');console.error('dbxUp FAIL',r.status,path,e);}else{console.log('dbxUp OK',path,blob.size+'B');}return r.ok;}catch(e){console.error('dbxUp ERR',path,e);return false;}}
+async function cloudSync(){if(!isDbxConnected()){console.warn('cloudSync: not connected');return;}const f=getFolder();const pn=safeFn(proj.name);const rn=safeFn(proj.res);console.log('cloudSync START',{f,pn,rn,date:proj.date,notes:notes.length,ivs:ivs.length});
 // 1. GeoJSON (경로+태그+메모+인터뷰위치+설문위치)
 const gj=buildGJ();await dbxUp(new Blob([JSON.stringify(gj,null,2)],{type:'application/json'}),`${f}/${pn}/${rn}_${proj.date}.geojson`);
 // 2. 종합 요약 JSON
