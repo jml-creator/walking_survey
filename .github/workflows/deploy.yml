@@ -21,10 +21,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Inject Dropbox secrets
+        env:
+          DBX_KEY: ${{ secrets.DBX_APP_KEY }}
+          DBX_SECRET: ${{ secrets.DBX_APP_SECRET }}
+          DBX_TOKEN: ${{ secrets.DBX_REFRESH_TOKEN }}
         run: |
-          sed -i "s/YOUR_APP_KEY_HERE/${{ secrets.DBX_APP_KEY }}/g" index.html
-          sed -i "s/YOUR_APP_SECRET_HERE/${{ secrets.DBX_APP_SECRET }}/g" index.html
-          sed -i "s/YOUR_REFRESH_TOKEN_HERE/${{ secrets.DBX_REFRESH_TOKEN }}/g" index.html
+          python3 -c "
+          import os
+          with open('index.html','r') as f: s=f.read()
+          s=s.replace('YOUR_APP_KEY_HERE',os.environ['DBX_KEY'])
+          s=s.replace('YOUR_APP_SECRET_HERE',os.environ['DBX_SECRET'])
+          s=s.replace('YOUR_REFRESH_TOKEN_HERE',os.environ['DBX_TOKEN'])
+          with open('index.html','w') as f: f.write(s)
+          "
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
