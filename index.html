@@ -362,8 +362,8 @@ function detectLoc(){
 function updCP(){const n=document.getElementById('projN').value.trim()||'survey';const el=document.getElementById('cloudP');el.style.display='block';if(isDbxConnected()){el.innerHTML=`<span style="color:var(--green)">&#10003;</span> Dropbox/앱/WalkingSurvey/${n}/`;el.style.color='var(--blue)';}else{el.innerHTML=`로컬 저장 (배포 후 자동 연결)`;el.style.color='var(--t3)';}}
 
 // ═══ DROPBOX 폴더 자동 생성 ═══
-async function createFolder(path){const tk=await getDbx();if(!tk)return;try{await fetch('https://api.dropboxapi.com/2/files/create_folder_v2',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({path,autorename:false})});}catch(e){}}
-async function initCloudFolder(){if(!isDbxConnected())return;const f=getFolder(),n=safeFn(proj.name);await createFolder(`${f}`);await createFolder(`${f}/${n}`);await createFolder(`${f}/${n}/interviews`);await createFolder(`${f}/${n}/photos`);}
+async function createFolder(path){if(!path)return;const tk=await getDbx();if(!tk)return;try{const r=await fetch('https://api.dropboxapi.com/2/files/create_folder_v2',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({path,autorename:false})});if(!r.ok){const e=await r.json().catch(()=>({}));if(r.status!==409)console.warn('createFolder',path,e);}}catch(e){}}
+async function initCloudFolder(){if(!isDbxConnected())return;const n=safeFn(proj.name);await createFolder(`/${n}`);await createFolder(`/${n}/interviews`);await createFolder(`/${n}/photos`);}
 
 // ═══ WEATHER ═══
 function degToDir(d){const dirs=['N','NE','E','SE','S','SW','W','NW'];return dirs[Math.round(d/45)%8];}
