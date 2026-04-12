@@ -87,24 +87,6 @@ label{font-size:12px;color:var(--t2);display:block;margin:10px 0 3px}
 <label>소속</label>
 <input type="text" id="sOrg" placeholder="연세대 도시설계">
 <div class="cd" style="margin-top:14px">
-<div style="font-size:12px;font-weight:600;margin-bottom:6px">GoPro MAX 2 카메라 배정</div>
-<div style="font-size:10px;color:var(--t3);line-height:1.5;margin-bottom:8px">이 서베이어가 사용할 카메라 번호를 선택하세요.<br>싱크 시 카메라 영상과 서베이 데이터가 자동 매칭됩니다.</div>
-<div style="display:flex;gap:6px">
-<label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent" id="camLabel1">
-<input type="radio" name="camNum" value="1" id="camR1" style="accent-color:var(--blue)">
-<div><div style="font-size:12px;font-weight:600">CAM 1</div><div style="font-size:9px;color:var(--t3)">카메라 A</div></div>
-</label>
-<label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent" id="camLabel2">
-<input type="radio" name="camNum" value="2" id="camR2" style="accent-color:var(--blue)">
-<div><div style="font-size:12px;font-weight:600">CAM 2</div><div style="font-size:9px;color:var(--t3)">카메라 B</div></div>
-</label>
-<label style="flex:1;display:flex;align-items:center;gap:6px;padding:10px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent" id="camLabelN">
-<input type="radio" name="camNum" value="0" id="camRN" style="accent-color:var(--t3)">
-<div><div style="font-size:12px;font-weight:600">없음</div><div style="font-size:9px;color:var(--t3)">카메라 미사용</div></div>
-</label>
-</div>
-</div>
-<div class="cd" style="margin-top:14px">
 <div style="font-size:12px;font-weight:600;margin-bottom:6px">데이터 저장</div>
 <div id="dbxCard" style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px">
 <span style="font-size:11px" id="dbxStatus">✓ 팀 Dropbox 자동 저장</span>
@@ -159,13 +141,27 @@ label{font-size:12px;color:var(--t2);display:block;margin:10px 0 3px}
 <div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxS">--</div><div style="color:var(--t3);font-size:8px">일사W</div></div>
 </div>
 </div>
-<div class="cd" style="padding:10px 12px;margin-top:8px" id="camCard">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:11px;font-weight:600">GoPro MAX 2</div><div style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px" id="camBadge">미설정</div></div>
-<div style="font-size:10px;color:var(--t3);line-height:1.7;padding:6px 8px;background:var(--bg);border-radius:6px">
+<div class="cd" style="padding:10px 12px;margin-top:8px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:11px;font-weight:600">GoPro MAX 2</div><button onclick="scanGoPro()" id="gpBtn" style="background:#378ADD22;color:var(--blue);border:none;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:600;cursor:pointer">검색</button></div>
+<div style="font-size:10px;color:var(--t3);line-height:1.7;margin-bottom:6px;padding:6px 8px;background:var(--bg);border-radius:6px">
 <div style="margin-bottom:2px;font-weight:600;color:var(--t2)">촬영 전 체크리스트</div>
 ① Quik 앱으로 카메라 연결 (시간 자동 동기화)<br>
 ② The Remote으로 2대 동시 촬영 시작<br>
 ③ 아래 서베이 시작 버튼 탭
+</div>
+<div style="display:flex;gap:6px;margin-bottom:6px"><div style="flex:1;padding:5px 8px;background:var(--bg);border-radius:6px;font-size:10px"><span id="cAN" style="font-weight:600;color:var(--t2)">CAM A</span> <span id="cAS" style="color:var(--t3)">대기</span> <span id="cAB" style="color:var(--t3);float:right">--</span></div>
+<div style="flex:1;padding:5px 8px;background:var(--bg);border-radius:6px;font-size:10px"><span id="cBN" style="font-weight:600;color:var(--t2)">CAM B</span> <span id="cBS" style="color:var(--t3)">대기</span> <span id="cBB" style="color:var(--t3);float:right">--</span></div></div>
+<div style="font-size:10px;font-weight:600;color:var(--t2);margin-bottom:4px">내 카메라 선택</div>
+<div style="display:flex;gap:6px">
+<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent;font-size:11px;font-weight:600" id="camLabel1" onclick="setCam(1)">
+<input type="radio" name="camNum" value="1" id="camR1" style="accent-color:var(--blue)"> CAM 1
+</label>
+<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent;font-size:11px;font-weight:600" id="camLabel2" onclick="setCam(2)">
+<input type="radio" name="camNum" value="2" id="camR2" style="accent-color:var(--blue)"> CAM 2
+</label>
+<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--bg);border-radius:8px;cursor:pointer;border:2px solid transparent;font-size:11px;font-weight:600;color:var(--t3)" id="camLabelN" onclick="setCam(0)">
+<input type="radio" name="camNum" value="0" id="camRN" style="accent-color:var(--t3)"> 없음
+</label>
 </div>
 </div>
 <button class="btn bp" onclick="startSurvey()" style="margin-top:10px">서베이 시작</button>
@@ -284,11 +280,12 @@ let pollI=null,saveCnt=0;
 function go(id,b){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));document.getElementById(id).classList.add('on');b.classList.add('on');if(id==='p5')updSum();if(id==='p3')updSF();}
 
 // ═══ SETUP ═══
-function updCamBadge(){const b=document.getElementById('camBadge');if(!b)return;const c=proj.cam||0;if(c>0){b.textContent=`CAM ${c}`;b.style.background='#378ADD22';b.style.color='var(--blue)';}else{b.textContent='미설정';b.style.background='var(--bg)';b.style.color='var(--t3)';}}
+function setCam(n){proj.cam=n;lsSet('camNum',n);document.querySelectorAll('#camLabel1,#camLabel2,#camLabelN').forEach(l=>l.style.borderColor='transparent');const sel=n===1?'camLabel1':n===2?'camLabel2':'camLabelN';document.getElementById(sel).style.borderColor='var(--blue)';}
+function restoreCam(){const n=parseInt(ls('camNum')||'0');proj.cam=n;const r=document.querySelector(`input[name=camNum][value="${n}"]`);if(r){r.checked=true;const sel=n===1?'camLabel1':n===2?'camLabel2':'camLabelN';document.getElementById(sel).style.borderColor='var(--blue)';}}
 (function(){
   const r=ls('researcher');
   if(!r){document.getElementById('setup').style.display='block';document.getElementById('start').style.display='none';}
-  else{const d=JSON.parse(r);proj.res=d.name;proj.cam=parseInt(d.cam||'0');document.getElementById('setup').style.display='none';document.getElementById('start').style.display='block';document.getElementById('resD').textContent=`${d.name}${d.org?' · '+d.org:''}`;updCamBadge();initStart();}
+  else{const d=JSON.parse(r);proj.res=d.name;document.getElementById('setup').style.display='none';document.getElementById('start').style.display='block';document.getElementById('resD').textContent=`${d.name}${d.org?' · '+d.org:''}`;restoreCam();initStart();}
   try{dbOff=parseFloat(ls('dbOff'))||0;}catch(e){}
 })();
 function ls(k){try{return localStorage.getItem(k)}catch(e){return null}}
@@ -301,18 +298,17 @@ function saveSetup(){
   const folder=document.getElementById('sFolder').value.trim()||'/WalkingSurvey';
   const form=document.getElementById('sForm').value.trim();
   const fe={p:document.getElementById('feProj').value.trim(),r:document.getElementById('feRes').value.trim(),g:document.getElementById('feGps').value.trim(),t:document.getElementById('feTime').value.trim(),w:document.getElementById('feWx').value.trim()};
-  const camNum=document.querySelector('input[name=camNum]:checked')?.value||'0';
-  lsSet('researcher',JSON.stringify({name:nm,org:o,folder,form,fe,cam:camNum}));
-  proj.res=nm;proj.cam=parseInt(camNum);
+  lsSet('researcher',JSON.stringify({name:nm,org:o,folder,form,fe}));
+  proj.res=nm;
   document.getElementById('setup').style.display='none';
   document.getElementById('start').style.display='block';
   document.getElementById('resD').textContent=`${nm}${o?' · '+o:''}`;
-  updCamBadge();
+  restoreCam();
   initStart();
 }
 function showSetup(){
   document.getElementById('start').style.display='none';document.getElementById('active').style.display='none';document.getElementById('setup').style.display='block';
-  try{const d=JSON.parse(ls('researcher')||'{}');document.getElementById('sName').value=d.name||'';document.getElementById('sOrg').value=d.org||'';document.getElementById('sFolder').value=d.folder||'/WalkingSurvey';document.getElementById('sForm').value=d.form||'';if(d.fe){document.getElementById('feProj').value=d.fe.p||'';document.getElementById('feRes').value=d.fe.r||'';document.getElementById('feGps').value=d.fe.g||'';document.getElementById('feTime').value=d.fe.t||'';document.getElementById('feWx').value=d.fe.w||'';}const cv=d.cam||'0';const cr=document.querySelector(`input[name=camNum][value="${cv}"]`);if(cr)cr.checked=true;}catch(e){}
+  try{const d=JSON.parse(ls('researcher')||'{}');document.getElementById('sName').value=d.name||'';document.getElementById('sOrg').value=d.org||'';document.getElementById('sFolder').value=d.folder||'/WalkingSurvey';document.getElementById('sForm').value=d.form||'';if(d.fe){document.getElementById('feProj').value=d.fe.p||'';document.getElementById('feRes').value=d.fe.r||'';document.getElementById('feGps').value=d.fe.g||'';document.getElementById('feTime').value=d.fe.t||'';document.getElementById('feWx').value=d.fe.w||'';}}catch(e){}
   document.getElementById('dbxStatus').textContent=isDbxConnected()?'✓ 팀 Dropbox 자동 저장':'⚙ 배포 시 Dropbox 설정 필요';
   document.getElementById('dbxStatus').style.color=isDbxConnected()?'var(--green)':'var(--t3)';
 }
