@@ -23,6 +23,7 @@ jobs:
       - name: Inject Dropbox secrets
         run: |
           sed -i "s/YOUR_APP_KEY_HERE/${{ secrets.DBX_APP_KEY }}/g" index.html
+          sed -i "s/YOUR_APP_SECRET_HERE/${{ secrets.DBX_APP_SECRET }}/g" index.html
           sed -i "s/YOUR_REFRESH_TOKEN_HERE/${{ secrets.DBX_REFRESH_TOKEN }}/g" index.html
 
       - name: Upload Pages artifact
