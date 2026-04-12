@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0C0C0B">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<title>Walking Survey</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0C0C0B;--card:#1A1A18;--border:#2C2C2A;--t1:#E8E6E0;--t2:#888780;--t3:#5F5E5A;--blue:#378ADD;--green:#1D9E75;--red:#E24B4A;--amber:#BA7517;--purple:#7F77DD}
+html,body{height:100%;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--t1)}
+body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+.hdr{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.hdr h1{font-size:15px;font-weight:700}
+.hdr .stats{display:flex;gap:10px;font-size:11px;color:var(--t2)}
+.hdr .dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.5s infinite;display:inline-block;margin-right:3px}
+.main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.tabs{display:flex;border-top:1px solid var(--border);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);background:var(--bg)}
+.tabs button{flex:1;padding:7px 0 5px;border:none;background:none;color:var(--t3);font-size:9px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font-family:inherit}
+.tabs button.on{color:var(--t1)}
+.tabs svg{width:20px;height:20px}
+.pg{display:none;padding:14px 16px 16px}
+.pg.on{display:block}
+.cd{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px}
+.btn{border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;width:100%;font-family:inherit}
+.btn:active{opacity:.7}
+.bp{background:var(--t1);color:var(--bg)}
+.bo{background:none;border:1px solid var(--border);color:var(--t2)}
+.bd{background:#E24B4A18;color:var(--red);border:1px solid #E24B4A30}
+input[type=text],textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--t1);font-size:13px;font-family:inherit;-webkit-appearance:none}
+textarea{resize:vertical;min-height:50px}
+label{font-size:12px;color:var(--t2);display:block;margin:10px 0 3px}
+.rg{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.rg label{margin:0;padding:7px 12px;border-radius:18px;border:1px solid var(--border);font-size:11px;cursor:pointer;color:var(--t2)}
+.rg input{display:none}
+.rg label:has(input:checked){background:#378ADD22;border-color:#378ADD44;color:var(--t1)}
+#miniMap{height:calc(52vh);border-radius:12px;overflow:hidden}
+#miniMap.big{height:calc(75vh)}
+.leaflet-container{background:var(--card)!important}
+.fab-row{display:flex;gap:10px;margin:10px 0 6px}
+.fab{border-radius:16px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:12px;font-weight:600;height:52px}
+.fab:active{transform:scale(.95)}
+.fab-m{background:var(--border);flex:2;color:var(--t1)}
+.fab-m.rec{background:var(--red);animation:breathe 2s infinite}
+.fab-p{background:var(--border);flex:2;color:var(--t1)}
+.fab-s{background:#E24B4A18;border:1px solid #E24B4A30;flex:1;color:var(--red)}
+.stags{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0}
+.stags button{padding:7px 2px;border-radius:8px;border:1px solid #2C2C2A44;background:var(--card);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--t2)}
+.stags button:active{opacity:.7}
+.ent{background:var(--card);border-radius:10px;padding:8px 10px;margin-bottom:5px;border-left:3px solid var(--t3);font-size:11px}
+.ent .tg span{padding:1px 6px;border-radius:8px;font-size:9px;background:#378ADD22;color:var(--blue);margin-right:3px}
+.vtoast{position:fixed;top:56px;left:14px;right:14px;background:var(--card);border:1px solid #E24B4A44;border-radius:10px;padding:8px 12px;z-index:100;display:none}
+.vtoast.show{display:block}
+.iv-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--card);border-radius:8px;margin-bottom:5px;font-size:11px}
+.sum-g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sum-g .v{font-size:16px;font-weight:600}
+.sum-g .l{font-size:10px;color:var(--t3)}
+.note-popup{font-size:11px;line-height:1.4}
+.note-popup .tag{padding:1px 5px;border-radius:6px;font-size:9px;background:#378ADD22;color:var(--blue)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(226,75,74,.4)}50%{box-shadow:0 0 0 10px rgba(226,75,74,0)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+<div><h1 id="hdrTitle">Walking Survey</h1></div>
+<div class="stats" id="hdrStats" style="display:none"><span class="dot"></span><span id="elap">0:00</span> <span id="distD">0km</span> <span id="cntD">0</span></div>
+</div>
+
+<div class="main">
+<!-- TAB 1: SURVEY -->
+<div class="pg on" id="p1">
+
+<!-- SETUP -->
+<div id="setup" style="padding:24px 4px">
+<div style="text-align:center;margin-bottom:16px"><div style="font-size:17px;font-weight:700">팀 설정</div><div style="font-size:12px;color:var(--t3);margin-top:3px">한 번만 입력하면 모든 팀원이 같은 폴더에 저장</div></div>
+<label style="margin-top:0;font-weight:600;color:var(--t1)">조사자 이름 *</label>
+<input type="text" id="sName" placeholder="홍길동">
+<label>소속</label>
+<input type="text" id="sOrg" placeholder="연세대 도시설계">
+<div class="cd" style="margin-top:14px">
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">데이터 저장</div>
+<div id="dbxCard" style="display:flex;align-items:center;gap:8px;padding:10px;background:var(--bg);border-radius:8px">
+<span style="font-size:11px" id="dbxStatus">✓ 팀 Dropbox 자동 저장</span>
+</div>
+<div style="font-size:9px;color:var(--t3);margin-top:3px">저장: Dropbox/앱/WalkingSurvey/{지명}/{조사자}_{날짜}.geojson</div>
+<input type="hidden" id="sFolder" value="">
+</div>
+<div class="cd">
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">Google Forms URL</div>
+<div style="font-size:10px;color:var(--t3);line-height:1.5;margin-bottom:8px">설문 탭에서 사용할 Google Form 주소</div>
+<input type="text" id="sForm" placeholder="https://docs.google.com/forms/d/e/.../viewform" style="font-size:11px">
+<div style="margin-top:8px;display:grid;grid-template-columns:60px 1fr;gap:3px;font-size:10px">
+<span style="color:var(--t2)">프로젝트</span><input type="text" id="feProj" placeholder="entry.123" style="font-size:10px;padding:4px 6px">
+<span style="color:var(--t2)">조사자</span><input type="text" id="feRes" placeholder="entry.234" style="font-size:10px;padding:4px 6px">
+<span style="color:var(--t2)">GPS</span><input type="text" id="feGps" placeholder="entry.345" style="font-size:10px;padding:4px 6px">
+<span style="color:var(--t2)">시간</span><input type="text" id="feTime" placeholder="entry.456" style="font-size:10px;padding:4px 6px">
+<span style="color:var(--t2)">날씨</span><input type="text" id="feWx" placeholder="entry.567" style="font-size:10px;padding:4px 6px">
+</div>
+</div>
+<button class="btn bp" onclick="saveSetup()">설정 완료</button>
+</div>
+
+<!-- START -->
+<div id="start" style="display:none;padding:0 4px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+<div><div style="font-size:17px;font-weight:700">현장조사</div><div style="font-size:11px;color:var(--t3)" id="resD"></div></div>
+<button onclick="showSetup()" style="background:none;border:none;cursor:pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-2.82 1.18V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+</div>
+<div class="cd" style="padding:10px 12px">
+<div style="display:flex;align-items:center;gap:8px">
+<div style="width:28px;height:28px;border-radius:50%;background:#378ADD22;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+<div style="flex:1"><div id="locN" style="font-size:13px;font-weight:600">위치 확인 중...</div><div id="locA" style="font-size:10px;color:var(--t3)"></div></div>
+</div>
+<div id="cloudP" style="font-size:10px;color:var(--blue);margin-top:6px;padding:4px 6px;background:#378ADD11;border-radius:4px;font-family:monospace;display:none"></div>
+</div>
+<label style="font-weight:600;color:var(--t1)">프로젝트 (지명)</label>
+<input type="text" id="projN" placeholder="GPS 자동 설정">
+<div style="font-size:10px;color:var(--t3);margin-top:2px" id="dtD"></div>
+<div id="wxCard" class="cd" style="margin-top:8px;display:none;padding:10px">
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;font-size:10px">
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:15px;font-weight:700" id="wxT">--</div><div style="color:var(--t3);font-size:8px">기온°C</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:15px;font-weight:700" id="wxAT">--</div><div style="color:var(--t3);font-size:8px">체감°C</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:15px;font-weight:700" id="wxH">--</div><div style="color:var(--t3);font-size:8px">습도%</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxD">--</div><div style="color:var(--t3);font-size:8px">날씨</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxW">--</div><div style="color:var(--t3);font-size:8px">풍속</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxWD">--</div><div style="color:var(--t3);font-size:8px">풍향</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxR">--</div><div style="color:var(--t3);font-size:8px">강수mm</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxC">--</div><div style="color:var(--t3);font-size:8px">구름%</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxP">--</div><div style="color:var(--t3);font-size:8px">PM2.5</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxP10">--</div><div style="color:var(--t3);font-size:8px">PM10</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxUV">--</div><div style="color:var(--t3);font-size:8px">UV</div></div>
+<div style="background:var(--bg);padding:5px;border-radius:6px;text-align:center"><div style="font-size:12px;font-weight:600" id="wxS">--</div><div style="color:var(--t3);font-size:8px">일사W</div></div>
+</div>
+</div>
+<div class="cd" style="padding:10px 12px;margin-top:8px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:11px;font-weight:600">GoPro MAX 2</div><button onclick="scanGoPro()" id="gpBtn" style="background:#378ADD22;color:var(--blue);border:none;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:600;cursor:pointer">검색</button></div>
+<div style="font-size:10px;color:var(--t3);line-height:1.7;margin-bottom:6px;padding:6px 8px;background:var(--bg);border-radius:6px">
+<div style="margin-bottom:2px;font-weight:600;color:var(--t2)">촬영 전 체크리스트</div>
+① Quik 앱으로 카메라 연결 (시간 자동 동기화)<br>
+② The Remote으로 2대 동시 촬영 시작<br>
+③ 아래 서베이 시작 버튼 탭
+</div>
+<div style="display:flex;gap:6px"><div style="flex:1;padding:5px 8px;background:var(--bg);border-radius:6px;font-size:10px"><span id="cAN" style="font-weight:600;color:var(--t2)">CAM A</span> <span id="cAS" style="color:var(--t3)">대기</span> <span id="cAB" style="color:var(--t3);float:right">--</span></div>
+<div style="flex:1;padding:5px 8px;background:var(--bg);border-radius:6px;font-size:10px"><span id="cBN" style="font-weight:600;color:var(--t2)">CAM B</span> <span id="cBS" style="color:var(--t3)">대기</span> <span id="cBB" style="color:var(--t3);float:right">--</span></div></div>
+</div>
+<button class="btn bp" onclick="startSurvey()" style="margin-top:10px">서베이 시작</button>
+<div id="cloudProjSec" style="margin-top:14px;display:none">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:11px;font-weight:600">팀 프로젝트 (Dropbox)</div><div style="font-size:9px;color:var(--t3)" id="cloudProjTime"></div></div>
+<div id="cloudProjList"></div>
+</div>
+<div id="savedSec" style="margin-top:14px;display:none"><div style="font-size:11px;font-weight:600;margin-bottom:5px">로컬 저장 프로젝트</div><div id="savedList"></div></div>
+</div>
+
+<!-- ACTIVE SURVEY -->
+<div id="active" style="display:none;padding:0 4px">
+<div class="vtoast" id="vtoast"><div style="font-size:11px;color:var(--red);font-weight:600">녹음 중</div><div id="liveT" style="font-size:12px;background:var(--border);padding:5px 8px;border-radius:6px;margin-top:4px;color:#B4B2A9">말씀하세요...</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0"><span style="font-size:10px;color:var(--t3)" id="mapL">지도</span><span style="font-size:10px;color:var(--blue);cursor:pointer" onclick="toggleMap()" id="mapB">확대</span></div>
+<div id="miniMap"></div>
+<div class="fab-row">
+<button class="fab fab-m" id="micB" onclick="toggleVoice()"><svg width="24" height="24" viewBox="0 0 24 24" fill="var(--t1)"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm-1 14.93A5 5 0 017 11H5a7 7 0 006 6.93V21h-3v2h8v-2h-3v-3.07A7 7 0 0019 11h-2a5 5 0 01-6 4.93z"/></svg>녹음</button>
+<button class="fab fab-p" onclick="document.getElementById('phI').click()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--t1)" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>사진</button>
+<button class="fab fab-s" onclick="stopSurvey()"><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--red)"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>
+</div>
+<input type="file" id="phI" accept="image/*" capture="environment" onchange="addPhoto(event)" style="display:none">
+<div class="stags" id="stags"></div>
+<div id="recent"></div>
+</div>
+</div>
+
+<!-- TAB 2: INTERVIEW -->
+<div class="pg" id="p2">
+<div class="cd">
+<div style="font-size:14px;font-weight:600;margin-bottom:10px">인터뷰 녹음</div>
+<label style="margin:0"><input type="checkbox" id="consent" onchange="document.getElementById('ivBtn').disabled=!this.checked;document.getElementById('ivBtn').style.opacity=this.checked?1:.4"> 연구 참여에 동의합니다</label>
+<div style="text-align:center;margin-top:14px">
+<button class="fab fab-m" id="ivBtn" onclick="toggleIV()" disabled style="margin:0 auto;opacity:.4"><svg width="22" height="22" viewBox="0 0 24 24" fill="var(--t1)"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zm-1 14.93A5 5 0 017 11H5a7 7 0 006 6.93V21h-3v2h8v-2h-3v-3.07A7 7 0 0019 11h-2a5 5 0 01-6 4.93z"/></svg></button>
+<div id="ivTimer" style="font-size:22px;font-weight:600;margin-top:10px;font-variant-numeric:tabular-nums;display:none">0:00</div>
+</div>
+<label>역할</label>
+<div class="rg"><label><input type="radio" name="role" value="주민" checked>주민</label><label><input type="radio" name="role" value="상인">상인</label><label><input type="radio" name="role" value="방문객">방문객</label><label><input type="radio" name="role" value="전문가">전문가</label><label><input type="radio" name="role" value="회의">회의</label></div>
+<label>연령대</label>
+<div class="rg"><label><input type="radio" name="age" value="20대" checked>20대</label><label><input type="radio" name="age" value="30대">30대</label><label><input type="radio" name="age" value="40대">40대</label><label><input type="radio" name="age" value="50대">50대</label><label><input type="radio" name="age" value="60대+">60대+</label></div>
+<label>메모</label>
+<input type="text" id="ivMemo" placeholder="인터뷰 대상 메모">
+</div>
+<div id="ivList"></div>
+</div>
+
+<!-- TAB 3: GOOGLE FORMS -->
+<div class="pg" id="p3">
+<div class="cd">
+<div style="font-size:14px;font-weight:600;margin-bottom:3px">이용자 설문</div>
+<div style="font-size:11px;color:var(--t3);margin-bottom:12px">Google Forms 연동 — 응답이 자동 수집됩니다</div>
+<div style="padding:8px 10px;background:var(--bg);border-radius:6px;margin-bottom:12px">
+<div style="font-size:10px;color:var(--t3);margin-bottom:3px">자동 첨부 정보</div>
+<div style="display:flex;flex-wrap:wrap;gap:4px"><span style="padding:1px 6px;border-radius:6px;background:#378ADD15;color:var(--blue);font-size:9px" id="sfP">--</span><span style="padding:1px 6px;border-radius:6px;background:#1D9E7515;color:var(--green);font-size:9px" id="sfR">--</span><span style="padding:1px 6px;border-radius:6px;background:#BA751715;color:var(--amber);font-size:9px" id="sfG">--</span><span style="padding:1px 6px;border-radius:6px;background:#7F77DD15;color:var(--purple);font-size:9px" id="sfT">--</span></div>
+</div>
+<button class="btn bp" onclick="openForm()">설문 시작 (Google Forms)</button>
+<div id="sfCnt" style="text-align:center;font-size:11px;color:var(--t3);margin-top:8px"></div>
+</div>
+</div>
+
+
+<!-- TAB 5: SYNC -->
+<div class="pg" id="p5">
+<div class="cd">
+<div style="font-size:14px;font-weight:600;margin-bottom:2px" id="exPN">서베이 요약</div>
+<div style="font-size:11px;color:var(--t3);margin-bottom:10px" id="exPS"></div>
+<div class="sum-g">
+<div><div class="v" id="sD">0km</div><div class="l">거리</div></div>
+<div><div class="v" id="sT">0:00</div><div class="l">시간</div></div>
+<div><div class="v" id="sN">0</div><div class="l">기록</div></div>
+<div><div class="v" id="sI">0</div><div class="l">인터뷰</div></div>
+<div><div class="v" id="sF">0</div><div class="l">설문</div></div>
+<div><div class="v" id="sDb">--</div><div class="l">평균dB</div></div>
+</div>
+</div>
+<!-- 전체 결과 맵 -->
+<div class="cd" style="padding:10px">
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">전체 경로 + 기록 지점</div>
+<div id="resultMap" style="height:280px;border-radius:8px;overflow:hidden"></div>
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;font-size:10px">
+<span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#378ADD"></span>경로/음성</span>
+<span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#1D9E75"></span>태그</span>
+<span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#BA7517"></span>사진</span>
+<span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#D4537E"></span>인터뷰</span>
+<span style="display:flex;align-items:center;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#7F77DD"></span>설문</span>
+</div>
+</div>
+<div class="cd" id="syncCard">
+<div style="font-size:12px;font-weight:600;margin-bottom:6px">Dropbox 동기화</div>
+<div style="font-size:11px;color:var(--t3);line-height:1.6" id="syncStatus">자동 저장 중...</div>
+<button class="btn bo" onclick="manualSync()" style="margin-top:8px" id="syncBtn">지금 동기화</button>
+</div>
+<button class="btn bo" onclick="resetSurvey()" style="margin-top:6px">새 서베이</button>
+</div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tabs">
+<button class="on" onclick="go('p1',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2"/></svg>서베이</button>
+<button onclick="go('p2',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 11a7 7 0 01-14 0"/><path d="M12 19v4m-3 0h6"/></svg>인터뷰</button>
+<button onclick="go('p3',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>설문</button>
+<button onclick="go('p5',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 12v7a2 2 0 002 2h12a2 2 0 002-2v-7"/><path d="M16 6l-4-4-4 4"/><line x1="12" y1="2" x2="12" y2="15"/></svg>동기화</button>
+</div>
+
+<script>
+// ═══ STATE ═══
+let on=false,t0=0,elap=0,dist=0,route=[],notes=[],ivs=[],surveys=[],dbTk=[];
+let wId=null,tI=null,voiceOn=false,recog=null,ivOn=false,mr=null,ivChunks=[],ivT0=0,ivTI=null;
+let dbCtx=null,dbAn=null,dbStr=null,dbOn=false,dbOff=0,dbHist=[],dbCI=null;
+let wx=null,proj={name:'',site:'',res:'',date:''};
+let map=null,rLine=null,posM=null,nMarkers=[],mapBig=false;
+const MC={voice:'#378ADD',quick:'#1D9E75',photo:'#BA7517',interview:'#D4537E',survey:'#7F77DD'};
+let cams=[{id:'A',dev:null,srv:null,qc:null,ok:false,rec:false,bat:null,nm:'CAM A'},{id:'B',dev:null,srv:null,qc:null,ok:false,rec:false,bat:null,nm:'CAM B'}];
+let pollI=null,saveCnt=0;
+
+// ═══ TABS ═══
+function go(id,b){document.querySelectorAll('.pg').forEach(p=>p.classList.remove('on'));document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));document.getElementById(id).classList.add('on');b.classList.add('on');if(id==='p5')updSum();if(id==='p3')updSF();}
+
+// ═══ SETUP ═══
+(function(){
+  const r=ls('researcher');
+  if(!r){document.getElementById('setup').style.display='block';document.getElementById('start').style.display='none';}
+  else{const d=JSON.parse(r);proj.res=d.name;document.getElementById('setup').style.display='none';document.getElementById('start').style.display='block';document.getElementById('resD').textContent=`${d.name}${d.org?' · '+d.org:''}`;initStart();}
+  try{dbOff=parseFloat(ls('dbOff'))||0;}catch(e){}
+})();
+function ls(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+function saveSetup(){
+  const nm=document.getElementById('sName').value.trim();
+  if(!nm){alert('이름을 입력해주세요');return;}
+  const o=document.getElementById('sOrg').value.trim();
+  const folder=document.getElementById('sFolder').value.trim()||'/WalkingSurvey';
+  const form=document.getElementById('sForm').value.trim();
+  const fe={p:document.getElementById('feProj').value.trim(),r:document.getElementById('feRes').value.trim(),g:document.getElementById('feGps').value.trim(),t:document.getElementById('feTime').value.trim(),w:document.getElementById('feWx').value.trim()};
+  lsSet('researcher',JSON.stringify({name:nm,org:o,folder,form,fe}));
+  proj.res=nm;
+  document.getElementById('setup').style.display='none';
+  document.getElementById('start').style.display='block';
+  document.getElementById('resD').textContent=`${nm}${o?' · '+o:''}`;
+  initStart();
+}
+function showSetup(){
+  document.getElementById('start').style.display='none';document.getElementById('active').style.display='none';document.getElementById('setup').style.display='block';
+  try{const d=JSON.parse(ls('researcher')||'{}');document.getElementById('sName').value=d.name||'';document.getElementById('sOrg').value=d.org||'';document.getElementById('sFolder').value=d.folder||'/WalkingSurvey';document.getElementById('sForm').value=d.form||'';if(d.fe){document.getElementById('feProj').value=d.fe.p||'';document.getElementById('feRes').value=d.fe.r||'';document.getElementById('feGps').value=d.fe.g||'';document.getElementById('feTime').value=d.fe.t||'';document.getElementById('feWx').value=d.fe.w||'';}}catch(e){}
+  document.getElementById('dbxStatus').textContent=isDbxConnected()?'✓ 팀 Dropbox 자동 저장':'⚙ 배포 시 Dropbox 설정 필요';
+  document.getElementById('dbxStatus').style.color=isDbxConnected()?'var(--green)':'var(--t3)';
+}
+
+// ═══ DROPBOX 팀 공유 (팀원 로그인 불필요) ═══
+// ★ 팀 리더: 아래 두 값을 교체. 방법은 코드 아래 주석 참고.
+const DBX_APP_KEY = 'YOUR_APP_KEY_HERE';
+const DBX_REFRESH_TOKEN = 'YOUR_REFRESH_TOKEN_HERE';
+// ──────────────────────────────────────────────────
+// 설정 방법 (팀 리더, 1회):
+// 1. dropbox.com/developers → Create App
+//    - Scoped access, ★ App folder ★, 이름: WalkingSurvey
+//    - Permissions 탭: files.content.write ✓ files.content.read ✓ → Submit
+// 2. 브라우저에서 아래 URL 접속 (APP_KEY 교체):
+//    https://www.dropbox.com/oauth2/authorize?client_id=APP_KEY&response_type=code&token_access_type=offline
+// 3. "허용" 클릭 → 화면에 나오는 코드 복사
+// 4. 터미널에서 실행:
+//    curl -X POST https://api.dropbox.com/oauth2/token \
+//      -d code=복사한코드 -d grant_type=authorization_code \
+//      -d client_id=APP_KEY -d client_secret=APP_SECRET
+// 5. 응답의 refresh_token 값을 위 DBX_REFRESH_TOKEN에 붙여넣기
+// 6. GitHub Pages 배포
+// ──────────────────────────────────────────────────
+// App Folder 모드: Dropbox/앱/WalkingSurvey/ 만 접근 가능 (안전)
+// 팀원의 Dropbox에는 앱/WalkingSurvey 폴더가 자동 생성됨
+// 폴더 경로는 "" (빈 문자열 = 앱 폴더 루트)
+// ──────────────────────────────────────────────────
+
+function getFolder(){return '';}  // App Folder 모드: 루트 = 앱 전용 폴더
+function isDbxConnected(){return DBX_APP_KEY!=='YOUR_APP_KEY_HERE'&&DBX_REFRESH_TOKEN!=='YOUR_REFRESH_TOKEN_HERE';}
+
+let _dbxToken='',_dbxExpiry=0;
+async function getDbx(){
+  if(!isDbxConnected())return '';
+  if(_dbxToken&&Date.now()<_dbxExpiry-300000)return _dbxToken;
+  try{
+    const r=await fetch('https://api.dropbox.com/oauth2/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`grant_type=refresh_token&refresh_token=${DBX_REFRESH_TOKEN}&client_id=${DBX_APP_KEY}`});
+    if(!r.ok)return '';
+    const t=await r.json();
+    _dbxToken=t.access_token;_dbxExpiry=Date.now()+t.expires_in*1000;
+    return _dbxToken;
+  }catch(e){return '';}
+}
+function getFormCfg(){try{const d=JSON.parse(ls('researcher')||'{}');return{url:d.form||'',fe:d.fe||{}}}catch(e){return{url:'',fe:{}}}}
+
+function initStart(){updDT();setInterval(updDT,60000);detectLoc();loadSaved();loadCloudProjects();}
+function updDT(){const n=new Date();document.getElementById('dtD').textContent=n.toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'})+' '+n.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
+
+// ═══ GPS + LOCATION ═══
+function detectLoc(){
+  document.getElementById('locN').textContent='위치 확인 중...';
+  if(!navigator.geolocation){document.getElementById('locN').textContent='GPS 불가';return;}
+  navigator.geolocation.getCurrentPosition(p=>{
+    const la=p.coords.latitude,ln=p.coords.longitude;
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${la}&lon=${ln}&format=json&accept-language=ko&zoom=17`).then(r=>r.json()).then(d=>{
+      const a=d.address||{},dong=a.quarter||a.neighbourhood||a.suburb||a.town||'',road=a.road||a.pedestrian||'',city=a.city||a.county||'';
+      document.getElementById('locN').textContent=road||dong||city||'알 수 없음';
+      document.getElementById('locA').textContent=[city,dong,road].filter(Boolean).join(' ');
+      const i=document.getElementById('projN');if(!i.value)i.value=dong||road||'survey';
+      proj.site=road||dong||city;updCP();fetchWx(la,ln);
+    }).catch(()=>{document.getElementById('locN').textContent=`${la.toFixed(4)}, ${ln.toFixed(4)}`;fetchWx(la,ln);});
+  },e=>{document.getElementById('locN').textContent='위치 실패';},{enableHighAccuracy:true,timeout:8000});
+  document.getElementById('projN').addEventListener('input',updCP);
+}
+function updCP(){const n=document.getElementById('projN').value.trim()||'survey';const el=document.getElementById('cloudP');el.style.display='block';if(isDbxConnected()){el.innerHTML=`<span style="color:var(--green)">&#10003;</span> Dropbox/앱/WalkingSurvey/${n}/`;el.style.color='var(--blue)';}else{el.innerHTML=`로컬 저장 (배포 후 자동 연결)`;el.style.color='var(--t3)';}}
+
+// ═══ DROPBOX 폴더 자동 생성 ═══
+async function createFolder(path){const tk=await getDbx();if(!tk)return;try{await fetch('https://api.dropboxapi.com/2/files/create_folder_v2',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({path,autorename:false})});}catch(e){}}
+async function initCloudFolder(){if(!isDbxConnected())return;const f=getFolder(),n=safeFn(proj.name);await createFolder(`${f}`);await createFolder(`${f}/${n}`);await createFolder(`${f}/${n}/interviews`);}
+
+// ═══ WEATHER ═══
+function degToDir(d){const dirs=['N','NE','E','SE','S','SW','W','NW'];return dirs[Math.round(d/45)%8];}
+function fetchWx(la,ln){
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${ln}&current=temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_direction_10m,cloud_cover,weather_code,precipitation,direct_radiation&hourly=pm2_5,pm10,uv_index&forecast_days=1&timezone=Asia/Seoul`).then(r=>r.json()).then(d=>{
+    if(!d.current)return;const c=d.current,h=new Date().getHours(),pm25=d.hourly?.pm2_5?.[h]??null,pm10=d.hourly?.pm10?.[h]??null,uv=d.hourly?.uv_index?.[h]??null;
+    wx={temp:c.temperature_2m,feels:c.apparent_temperature,humid:c.relative_humidity_2m,wind:c.wind_speed_10m,windDir:c.wind_direction_10m,cloud:c.cloud_cover,code:c.weather_code,desc:wxName(c.weather_code),precip:c.precipitation,pm25,pm10,uv,sun:c.direct_radiation};
+    document.getElementById('wxCard').style.display='block';
+    document.getElementById('wxT').textContent=Math.round(c.temperature_2m)+'°';
+    document.getElementById('wxAT').textContent=Math.round(c.apparent_temperature)+'°';
+    document.getElementById('wxH').textContent=Math.round(c.relative_humidity_2m)+'%';
+    document.getElementById('wxW').textContent=c.wind_speed_10m.toFixed(1);
+    document.getElementById('wxWD').textContent=degToDir(c.wind_direction_10m);
+    document.getElementById('wxR').textContent=c.precipitation.toFixed(1);
+    document.getElementById('wxC').textContent=Math.round(c.cloud_cover)+'%';
+    document.getElementById('wxP').textContent=pm25!==null?Math.round(pm25):'--';
+    document.getElementById('wxP10').textContent=pm10!==null?Math.round(pm10):'--';
+    document.getElementById('wxUV').textContent=uv!==null?uv.toFixed(1):'--';
+    document.getElementById('wxS').textContent=Math.round(c.direct_radiation);
+    document.getElementById('wxD').textContent=wx.desc;
+    // 체감온도 색상 (열쾌적성)
+    const at=c.apparent_temperature;
+    document.getElementById('wxAT').style.color=at>33?'var(--red)':at>28?'var(--amber)':at<0?'var(--blue)':'var(--t1)';
+    // 미세먼지 색상
+    if(pm25!==null){document.getElementById('wxP').style.color=pm25<=15?'var(--green)':pm25<=35?'var(--amber)':'var(--red)';}
+    if(pm10!==null){document.getElementById('wxP10').style.color=pm10<=30?'var(--green)':pm10<=80?'var(--amber)':'var(--red)';}
+    // UV 색상
+    if(uv!==null){document.getElementById('wxUV').style.color=uv<=2?'var(--green)':uv<=5?'var(--amber)':uv<=7?'#D85A30':'var(--red)';}
+    // 일사량 색상
+    document.getElementById('wxS').style.color=c.direct_radiation>400?'var(--amber)':c.direct_radiation>100?'#BA7517':'var(--t2)';
+    // 강수 색상
+    if(c.precipitation>0){document.getElementById('wxR').style.color='var(--blue)';}
+  }).catch(()=>{});
+}
+function wxName(c){return{0:'맑음',1:'대체로맑음',2:'부분흐림',3:'흐림',45:'안개',51:'이슬비',61:'약한비',63:'비',71:'약한눈',73:'눈',80:'소나기',95:'뇌우'}[c]||'코드'+c;}
+
+// ═══ SAVED PROJECTS ═══
+function loadSaved(){
+  try{const s=JSON.parse(ls('projects')||'[]'),sec=document.getElementById('savedSec'),el=document.getElementById('savedList');
+  if(!s.length){sec.style.display='none';return;}sec.style.display='block';
+  el.innerHTML=s.slice(-5).reverse().map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--card);border-radius:8px;margin-bottom:4px;border:1px solid var(--border)"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div><div style="font-size:10px;color:var(--t3)">${p.nc||0}건 · ${(p.dist/1000||0).toFixed(1)}km</div></div><button onclick="resumeP('${p.name}')" style="background:#1D9E7522;color:var(--green);border:none;border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;margin-left:6px">이어하기</button></div>`).join('');}catch(e){}
+}
+
+// ═══ DROPBOX 프로젝트 목록 불러오기 ═══
+async function loadCloudProjects(){
+  if(!isDbxConnected())return;
+  const sec=document.getElementById('cloudProjSec');
+  const el=document.getElementById('cloudProjList');
+  const f=getFolder();
+  const tk=await getDbx();
+  if(!tk)return;
+  try{
+    const r=await fetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({path:f,include_non_downloadable_files:false})});
+    if(!r.ok){
+      // 폴더가 아직 없으면 조용히 종료
+      if(r.status===409)return;
+      return;
+    }
+    const data=await r.json();
+    const folders=data.entries.filter(e=>e['.tag']==='folder').sort((a,b)=>a.name.localeCompare(b.name,'ko'));
+    if(!folders.length)return;
+    sec.style.display='block';
+    document.getElementById('cloudProjTime').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+
+    // 각 폴더의 파일 수를 병렬로 조회
+    const details=await Promise.all(folders.map(async fd=>{
+      try{
+        const r2=await fetch('https://api.dropboxapi.com/2/files/list_folder',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Content-Type':'application/json'},body:JSON.stringify({path:fd.path_lower})});
+        if(!r2.ok)return{name:fd.name,files:0,members:[]};
+        const d2=await r2.json();
+        const geoFiles=d2.entries.filter(e=>e.name.endsWith('.geojson'));
+        const members=geoFiles.map(g=>{
+          const m=g.name.match(/^(.+?)_\d{4}-/);
+          return m?m[1]:g.name.replace('.geojson','');
+        });
+        return{name:fd.name,files:geoFiles.length,members:[...new Set(members)]};
+      }catch(e){return{name:fd.name,files:0,members:[]};}
+    }));
+
+    el.innerHTML=details.map(p=>{
+      const memStr=p.members.length?p.members.join(', '):'데이터 없음';
+      return `<div onclick="selectCloudProject('${p.name}')" style="padding:8px 10px;background:var(--card);border-radius:8px;margin-bottom:4px;border:1px solid var(--border);cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:12px;font-weight:600">${p.name}</div>
+          <div style="font-size:10px;color:var(--blue)">${p.files}개 파일</div>
+        </div>
+        <div style="font-size:10px;color:var(--t3);margin-top:2px">${memStr}</div>
+      </div>`;
+    }).join('');
+  }catch(e){console.warn('Cloud projects:',e);}
+}
+
+function selectCloudProject(name){
+  document.getElementById('projN').value=name;
+  updCP();
+  // 스크롤 올리기
+  document.getElementById('projN').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('projN').style.borderColor='var(--blue)';
+  setTimeout(()=>document.getElementById('projN').style.borderColor='',1500);
+}
+function saveP(){
+  try{const s=JSON.parse(ls('projects')||'[]'),i=s.findIndex(p=>p.name===proj.name&&p.res===proj.res);
+  const e={name:proj.name,site:proj.site,res:proj.res,date:proj.date,nc:notes.length,ni:ivs.length,nf:surveys.length,dist,elap,t0,route,notes:notes.map(n=>({...n,photo:undefined})),surveys,dbTk,ts:Date.now()};
+  if(i>=0)s[i]=e;else s.push(e);if(s.length>20)s.splice(0,s.length-20);lsSet('projects',JSON.stringify(s));}catch(e){}
+}
+function resumeP(nm){
+  try{const s=JSON.parse(ls('projects')||'[]'),p=s.find(x=>x.name===nm);if(!p)return;
+  proj.name=p.name;proj.site=p.site||p.name;proj.date=p.date||new Date().toISOString().slice(0,10);
+  route=p.route||[];notes=p.notes||[];surveys=p.surveys||[];dbTk=p.dbTk||[];dist=p.dist||0;elap=p.elap||0;t0=p.t0||Date.now();
+  document.getElementById('projN').value=p.name;startSurvey();}catch(e){alert('로드 실패');}
+}
+
+// ═══ START / STOP ═══
+function startSurvey(){
+  const nm=document.getElementById('projN').value.trim();if(!nm){alert('프로젝트 이름을 입력하세요');return;}
+  proj.name=nm;if(!proj.site)proj.site=nm;proj.date=new Date().toISOString().slice(0,10);proj.startedAt=new Date().toISOString();if(wx)proj.wx=wx;
+  on=true;if(!t0)t0=Date.now();
+  document.getElementById('start').style.display='none';document.getElementById('setup').style.display='none';document.getElementById('active').style.display='block';
+  document.getElementById('hdrStats').style.display='flex';document.getElementById('hdrTitle').textContent=proj.site;
+  tI=setInterval(()=>{updTimer();if(++saveCnt%30===0)saveP();if(saveCnt%60===0)cloudSync();},1000);
+  if(navigator.geolocation)wId=navigator.geolocation.watchPosition(onGPS,()=>{},{enableHighAccuracy:true,maximumAge:2000,timeout:10000});
+  setTimeout(()=>{initMap();if(route.length)updMap();notes.forEach(addMarker);},400);
+  // Dropbox 폴더 자동 생성 + 첫 동기화
+  initCloudFolder().then(()=>cloudSync());
+  renderTags();renderRecent();
+}
+function stopSurvey(){if(!confirm(`서베이를 종료합니다.\n\n${notes.length}건 기록 · ${ivs.length}건 인터뷰 · ${(dist/1000).toFixed(2)}km\n\nDropbox에 자동 저장됩니다.\n종료하시겠습니까?`))return;on=false;if(wId)navigator.geolocation.clearWatch(wId);clearInterval(tI);if(dbCI){clearInterval(dbCI);dbCI=null;}if(pollI)clearInterval(pollI);if(dbOn){dbOn=false;if(dbStr)dbStr.getTracks().forEach(t=>t.stop());if(dbCtx)dbCtx.close();}saveP();cloudSync();ivs.forEach((v,i)=>cloudUpIV(v,i));go('p5',document.querySelectorAll('.tabs button')[3]);}
+function resetSurvey(){if(!confirm('새 서베이를 시작합니다.\n현재 데이터는 저장되어 있습니다.'))return;saveP();t0=0;elap=0;dist=0;notes=[];ivs=[];surveys=[];dbTk=[];route=[];proj={name:'',site:'',res:proj.res,date:''};saveCnt=0;if(rLine)rLine.setLatLngs([]);nMarkers.forEach(m=>{if(map)map.removeLayer(m)});nMarkers=[];document.getElementById('active').style.display='none';document.getElementById('start').style.display='block';document.getElementById('hdrStats').style.display='none';document.getElementById('hdrTitle').textContent='Walking Survey';document.getElementById('projN').value='';detectLoc();loadSaved();}
+
+function updTimer(){elap=Date.now()-t0;const s=Math.floor(elap/1000),m=Math.floor(s/60);document.getElementById('elap').textContent=`${m}:${String(s%60).padStart(2,'0')}`;}
+function fmtT(ms){const s=Math.floor(ms/1000),m=Math.floor(s/60);return`${m}:${String(s%60).padStart(2,'0')}`;}
+
+// ═══ GPS ═══
+function onGPS(p){const pt={lat:p.coords.latitude,lng:p.coords.longitude,time:Date.now()};if(route.length){const d=hav(route[route.length-1],pt);if(d>2){dist+=d;route.push(pt);updMap();}}else{route.push(pt);updMap();}document.getElementById('distD').textContent=(dist/1000).toFixed(2)+'km';}
+function hav(a,b){const R=6371000,dL=(b.lat-a.lat)*Math.PI/180,dN=(b.lng-a.lng)*Math.PI/180,x=Math.sin(dL/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dN/2)**2;return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
+function curP(){return route.length?route[route.length-1]:{lat:0,lng:0};}
+
+// ═══ MAP ═══
+function initMap(){if(map)return;map=L.map('miniMap',{zoomControl:false,attributionControl:false}).setView([37.56,126.94],16);L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);rLine=L.polyline([],{color:'var(--blue)',weight:3,opacity:.8}).addTo(map);const ic=L.divIcon({className:'',html:'<div style="width:12px;height:12px;border-radius:50%;background:#378ADD;border:2px solid #E8E6E0;box-shadow:0 0 0 3px rgba(55,138,221,.3)"></div>',iconSize:[12,12],iconAnchor:[6,6]});posM=L.marker([0,0],{icon:ic}).addTo(map);setTimeout(()=>map.invalidateSize(),300);}
+function updMap(){if(!map||!route.length)return;rLine.setLatLngs(route.map(p=>[p.lat,p.lng]));const l=route[route.length-1];posM.setLatLng([l.lat,l.lng]);if(!mapBig)map.setView([l.lat,l.lng],17,{animate:true,duration:.5});document.getElementById('mapL').textContent=`지도 · ${nMarkers.length}건 · ${(dist/1000).toFixed(2)}km`;}
+function addMarker(n){if(!map||!n.lat)return;const c=MC[n.type]||'#888780';const sz=n.type==='interview'||n.type==='survey'?10:8;const ic=L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${c};border:2px solid #E8E6E0"></div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});const m=L.marker([n.lat,n.lng],{icon:ic}).addTo(map);const tl={voice:'음성',quick:'태그',photo:'사진',interview:'인터뷰',survey:'설문'}[n.type]||n.type;let h=`<div class="note-popup"><b>${tl}</b> ${fmtT(n.elap||0)}`;if(n.transcript)h+=`<br>${n.transcript.slice(0,50)}`;if(n.tags?.length)h+='<br>'+n.tags.map(t=>`<span class="tag">${t.tag||t}</span>`).join(' ');h+='</div>';m.bindPopup(h,{closeButton:false,maxWidth:180});nMarkers.push(m);updMap();}
+function toggleMap(){mapBig=!mapBig;document.getElementById('miniMap').classList.toggle('big',mapBig);document.getElementById('mapB').textContent=mapBig?'축소':'확대';setTimeout(()=>{if(map)map.invalidateSize();if(route.length>1&&mapBig)map.fitBounds(rLine.getBounds(),{padding:[16,16]});},350);}
+
+// ═══ VOICE ═══
+const KW={"좁":["보행","보도 협소"],"넓":["제안","보도확장"],"나무":["녹지","가로수"],"의자":["시설","벤치"],"앉":["활동","앉아있음"],"서":["활동","서있음"],"사람 많":["활동","많음"],"한산":["활동","적음"],"주차":["차량","불법주차"],"시끄":["문제","소음"],"위험":["문제","위험"],"낡":["문제","노후"],"카페":["활동","카페"],"유리":["건물","유리"],"공실":["건물","공실"],"벤치":["시설","벤치"]};
+function matchT(t){const m=[];Object.entries(KW).forEach(([k,[c,tg]])=>{if(t.includes(k)&&!m.some(x=>x.tag===tg))m.push({category:c,tag:tg});});return m;}
+function toggleVoice(){if(voiceOn){stopVoice();return;}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){alert('음성 인식 미지원');return;}recog=new SR();recog.lang='ko-KR';recog.continuous=true;recog.interimResults=true;let fin='';recog.onresult=e=>{let tmp='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)fin+=e.results[i][0].transcript+' ';else tmp+=e.results[i][0].transcript;}document.getElementById('liveT').textContent=fin+tmp||'말씀하세요...';};recog.onend=()=>{if(voiceOn)try{recog.start()}catch(e){}else if(fin.trim()){addNote({type:'voice',transcript:fin.trim(),tags:matchT(fin)});fin='';document.getElementById('liveT').textContent='말씀하세요...';}};recog.onerror=()=>{};recog.start();voiceOn=true;document.getElementById('micB').className='fab fab-m rec';document.getElementById('vtoast').classList.add('show');}
+function stopVoice(){voiceOn=false;if(recog)recog.stop();document.getElementById('micB').className='fab fab-m';document.getElementById('vtoast').classList.remove('show');}
+
+// ═══ NOTES ═══
+function addNote(d){const p=curP();const n={id:Date.now(),...d,lat:p.lat,lng:p.lng,time:Date.now(),elap};notes.push(n);document.getElementById('cntD').textContent=notes.length;addMarker(n);if(d.tags?.length)d.tags.forEach(t=>{const f=JSON.parse(ls('tagF')||'{}');f[t.tag]=(f[t.tag]||0)+1;lsSet('tagF',JSON.stringify(f));});renderTags();renderRecent();}
+function addQT(c,t){addNote({type:'quick',transcript:'',tags:[{category:c,tag:t}]});}
+function addPhoto(e){const f=e.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=ev=>{addNote({type:'photo',transcript:'',tags:[],photo:ev.target.result});};r.readAsDataURL(f);e.target.value='';}
+
+// ═══ SMART TAGS ═══
+const TAGS=[{c:'활동',t:'많음',cl:'#7F77DD'},{c:'활동',t:'적음',cl:'#7F77DD'},{c:'활동',t:'앉음',cl:'#7F77DD'},{c:'활동',t:'서있음',cl:'#7F77DD'},{c:'문제',t:'위험',cl:'#E24B4A'},{c:'문제',t:'노후',cl:'#D85A30'},{c:'차량',t:'주차',cl:'#E24B4A'},{c:'녹지',t:'녹지-',cl:'#639922'},{c:'건물',t:'공실',cl:'#888780'},{c:'건물',t:'유리',cl:'#888780'},{c:'시설',t:'벤치',cl:'#BA7517'},{c:'제안',t:'넓게',cl:'#1D9E75'},{c:'시설',t:'가로수',cl:'#639922'},{c:'문제',t:'소음',cl:'#D85A30'},{c:'활동',t:'카페',cl:'#BA7517'},{c:'문제',t:'좁음',cl:'#E24B4A'}];
+function renderTags(){const f=JSON.parse(ls('tagF')||'{}');const sorted=[...TAGS].sort((a,b)=>(f[b.t]||0)-(f[a.t]||0));const el=document.getElementById('stags');if(!el)return;el.innerHTML=sorted.slice(0,8).map(t=>`<button onclick="addQT('${t.c}','${t.t}')" style="color:${t.cl}">${t.t}</button>`).join('');}
+function renderRecent(){const el=document.getElementById('recent');if(!el)return;el.innerHTML=[...notes].reverse().slice(0,3).map(n=>`<div class="ent" style="border-left-color:${MC[n.type]||'var(--t3)'}"><span style="color:var(--t3)">${fmtT(n.elap)}</span>${n.transcript?' "'+n.transcript.slice(0,40)+'"':''} <div class="tg">${(n.tags||[]).map(t=>`<span>${t.tag||t}</span>`).join('')}</div></div>`).join('');}
+
+// ═══ INTERVIEW ═══
+function toggleIV(){if(ivOn){stopIV();return;}navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/mp4';mr=new MediaRecorder(s,{mimeType:mime});ivChunks=[];mr.ondataavailable=e=>{if(e.data.size)ivChunks.push(e.data);};mr.onstop=()=>{s.getTracks().forEach(t=>t.stop());const blob=new Blob(ivChunks,{type:mime}),ext=mime.includes('webm')?'webm':'m4a',p=curP(),role=document.querySelector('input[name=role]:checked')?.value||'',age=document.querySelector('input[name=age]:checked')?.value||'',memo=document.getElementById('ivMemo').value;ivs.push({id:Date.now(),blob,ext,lat:p.lat,lng:p.lng,time:Date.now(),role,age,memo,dur:Date.now()-ivT0});addMarker({type:'interview',lat:p.lat,lng:p.lng,elap,transcript:role+' '+age});document.getElementById('ivMemo').value='';renderIV();};mr.start();ivOn=true;ivT0=Date.now();document.getElementById('ivBtn').className='fab fab-m rec';document.getElementById('ivTimer').style.display='block';ivTI=setInterval(()=>{document.getElementById('ivTimer').textContent=fmtT(Date.now()-ivT0);},1000);}).catch(e=>alert('마이크 오류: '+e.message));}
+function stopIV(){ivOn=false;if(mr&&mr.state!=='inactive')mr.stop();clearInterval(ivTI);document.getElementById('ivBtn').className='fab fab-m';document.getElementById('ivTimer').style.display='none';}
+function renderIV(){document.getElementById('ivList').innerHTML=ivs.map((v,i)=>`<div class="iv-item"><div style="flex:1;color:#B4B2A9">#${i+1} ${v.role} ${v.age} ${fmtT(v.dur)}</div><button onclick="new Audio(URL.createObjectURL(ivs[${i}].blob)).play()" style="width:30px;height:30px;border-radius:50%;background:#378ADD22;border:none;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="#378ADD"><polygon points="5 3 19 12 5 21"/></svg></button></div>`).join('');}
+
+// ═══ GOOGLE FORMS ═══
+function updSF(){const p=curP();document.getElementById('sfP').textContent=proj.name||'--';document.getElementById('sfR').textContent=proj.res||'--';document.getElementById('sfG').textContent=p.lat?`${p.lat.toFixed(4)},${p.lng.toFixed(4)}`:'GPS';document.getElementById('sfT').textContent=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});}
+function openForm(){const cfg=getFormCfg();if(!cfg.url){alert('Google Form URL을 설정에서 입력하세요');return;}const p=curP(),fe=cfg.fe,ps=[];if(fe.p)ps.push(`${fe.p}=${encodeURIComponent(proj.name||'')}`);if(fe.r)ps.push(`${fe.r}=${encodeURIComponent(proj.res||'')}`);if(fe.g&&p.lat)ps.push(`${fe.g}=${encodeURIComponent(`${p.lat.toFixed(6)},${p.lng.toFixed(6)}`)}`);if(fe.t)ps.push(`${fe.t}=${encodeURIComponent(new Date().toISOString())}`);if(fe.w&&wx)ps.push(`${fe.w}=${encodeURIComponent(`${Math.round(wx.temp)}°C,${wx.humid}%,${wx.desc},PM2.5:${wx.pm25||'--'}`)}`);let url=cfg.url;if(ps.length)url+=(url.includes('?')?'&':'?')+'usp=pp_url&'+ps.join('&');surveys.push({id:Date.now(),lat:p.lat,lng:p.lng,time:Date.now(),type:'google_form'});addMarker({type:'survey',lat:p.lat,lng:p.lng,elap,transcript:'설문'});document.getElementById('sfCnt').textContent=`${surveys.length}건 설문`;window.open(url,'_blank');}
+
+// ═══ dB ═══
+function toggleDB(){if(dbOn){dbOn=false;if(dbStr)dbStr.getTracks().forEach(t=>t.stop());if(dbCtx)dbCtx.close();document.getElementById('dbTgl').textContent='측정 시작';return;}const AC=window.AudioContext||window.webkitAudioContext;if(!AC){alert('오디오 미지원');return;}navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{dbStr=s;dbCtx=new AC();dbCtx.resume();const src=dbCtx.createMediaStreamSource(s);dbAn=dbCtx.createAnalyser();dbAn.fftSize=2048;src.connect(dbAn);dbOn=true;dbHist=[];document.getElementById('dbTgl').textContent='측정 중지';mDB();}).catch(e=>alert('마이크 오류'));}
+function mDB(){if(!dbOn)return;const d=new Float32Array(dbAn.fftSize);dbAn.getFloatTimeDomainData(d);let r=0;for(let i=0;i<d.length;i++)r+=d[i]*d[i];r=Math.sqrt(r/d.length);let db=20*Math.log10(r+1e-10)+94+dbOff;db=Math.max(20,Math.min(120,db));dbHist.push(db);if(dbHist.length>60)dbHist.shift();const el=document.getElementById('dbV');el.textContent=Math.round(db);el.style.color=db<50?'var(--green)':db<70?'var(--amber)':'var(--red)';document.getElementById('dbL').textContent=db<50?'조용':db<70?'보통':db<80?'높은 소음':'매우 시끄러움';drawDB();requestAnimationFrame(mDB);}
+function drawDB(){const cv=document.getElementById('dbCv'),ctx=cv.getContext('2d'),w=cv.width,h=cv.height;ctx.clearRect(0,0,w,h);if(dbHist.length<2)return;ctx.strokeStyle='#378ADD';ctx.lineWidth=2;ctx.beginPath();dbHist.forEach((v,i)=>{const x=i/(dbHist.length-1)*w,y=h-((v-20)/100*h);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();}
+function calDB(){if(!dbOn){alert('먼저 측정 시작');return;}const c=dbHist.length?dbHist[dbHist.length-1]:60;dbOff+=60-c;lsSet('dbOff',dbOff);alert('60dB 기준 보정 완료');}
+function toggleContDB(){if(document.getElementById('dbCont').checked){if(!dbOn)toggleDB();dbCI=setInterval(()=>{if(!dbHist.length)return;const p=curP();dbTk.push({time:Date.now(),lat:p.lat,lng:p.lng,db:Math.round(dbHist[dbHist.length-1])});},1000);}else{if(dbCI)clearInterval(dbCI);dbCI=null;}}
+
+// ═══ EXPORT ═══
+function safeFn(s){return(s||'survey').replace(/[^a-zA-Z0-9가-힣_-]/g,'_').replace(/_+/g,'_');}
+function buildGJ(){const fs=[];if(route.length>1)fs.push({type:"Feature",geometry:{type:"LineString",coordinates:route.map(p=>[p.lng,p.lat])},properties:{type:"route",distance_m:Math.round(dist),duration_ms:elap}});notes.forEach(n=>{const pr={type:n.type,elapsed_ms:n.elap,transcript:n.transcript||'',tags:(n.tags||[]).map(t=>t.tag||t),timestamp:new Date(n.time).toISOString()};if(n.photo)pr.has_photo=true;fs.push({type:"Feature",geometry:{type:"Point",coordinates:[n.lng,n.lat]},properties:pr});});ivs.forEach((v,i)=>{fs.push({type:"Feature",geometry:{type:"Point",coordinates:[v.lng,v.lat]},properties:{type:"interview",audio_file:`${safeFn(proj.name)}_${safeFn(proj.res)}_iv${i+1}.${v.ext}`,role:v.role,age_group:v.age,memo:v.memo,duration_ms:v.dur,timestamp:new Date(v.time).toISOString()}});});surveys.forEach(s=>{fs.push({type:"Feature",geometry:{type:"Point",coordinates:[s.lng,s.lat]},properties:{type:"survey",timestamp:new Date(s.time).toISOString()}});});if(dbTk.length>1)fs.push({type:"Feature",geometry:{type:"LineString",coordinates:dbTk.map(d=>[d.lng,d.lat])},properties:{type:"noise_track",db_values:dbTk.map(d=>d.db),timestamps:dbTk.map(d=>new Date(d.time).toISOString())}});return{type:"FeatureCollection",properties:{project:proj.name,site:proj.site,researcher:proj.res,date:proj.date,started_at:proj.startedAt,total_distance_m:Math.round(dist),total_duration_ms:elap,weather:wx||null,exported_at:new Date().toISOString()},features:fs};}
+function exportGJ(){}
+function exportIV(){}
+let resMap=null;
+function renderResultMap(){
+  if(!document.getElementById('resultMap'))return;
+  if(resMap){resMap.remove();resMap=null;}
+  resMap=L.map('resultMap',{zoomControl:false,attributionControl:false}).setView([37.56,126.94],15);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(resMap);
+  // 경로
+  if(route.length>1){
+    const rl=L.polyline(route.map(p=>[p.lat,p.lng]),{color:'#378ADD',weight:3,opacity:.8}).addTo(resMap);
+    resMap.fitBounds(rl.getBounds(),{padding:[20,20]});
+  }
+  // 모든 마커
+  const allPts=[...notes,...ivs.map((v,i)=>({type:'interview',lat:v.lat,lng:v.lng,elap:0,transcript:v.role+' '+v.age})),...surveys.map(s=>({type:'survey',lat:s.lat,lng:s.lng,elap:0,transcript:'설문'}))];
+  allPts.forEach(n=>{
+    if(!n.lat)return;
+    const c=MC[n.type]||'#888780';
+    const sz=n.type==='interview'||n.type==='survey'?10:8;
+    const ic=L.divIcon({className:'',html:`<div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${c};border:2px solid #E8E6E0"></div>`,iconSize:[sz,sz],iconAnchor:[sz/2,sz/2]});
+    const m=L.marker([n.lat,n.lng],{icon:ic}).addTo(resMap);
+    const tl={voice:'음성',quick:'태그',photo:'사진',interview:'인터뷰',survey:'설문'}[n.type]||n.type;
+    let h=`<div class="note-popup"><b>${tl}</b>`;
+    if(n.transcript)h+=` ${n.transcript.slice(0,40)}`;
+    if(n.tags?.length)h+='<br>'+n.tags.map(t=>`<span class="tag">${t.tag||t}</span>`).join(' ');
+    h+='</div>';
+    m.bindPopup(h,{closeButton:false,maxWidth:180});
+  });
+  // dB 트랙
+  if(dbTk.length>1){
+    L.polyline(dbTk.map(d=>[d.lat,d.lng]),{color:'#639922',weight:2,opacity:.5,dashArray:'4 4'}).addTo(resMap);
+  }
+  setTimeout(()=>resMap.invalidateSize(),300);
+}
+async function manualSync(){
+  const btn=document.getElementById('syncBtn');
+  const st=document.getElementById('syncStatus');
+  if(!isDbxConnected()){st.textContent='Dropbox 미연결 — 로컬에만 저장됨';return;}
+  btn.textContent='동기화 중...';btn.disabled=true;
+  await initCloudFolder();
+  await cloudSync();
+  for(let i=0;i<ivs.length;i++)await cloudUpIV(ivs[i],i);
+  const t=new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  st.innerHTML=`<span style="color:var(--green)">&#10003;</span> ${t} 동기화 완료<br>GeoJSON + 인터뷰 ${ivs.length}건 업로드됨`;
+  btn.textContent='지금 동기화';btn.disabled=false;
+}
+function updSum(){
+  document.getElementById('exPN').textContent=proj.site||'서베이';
+  document.getElementById('exPS').textContent=`${proj.name} · ${proj.res} · ${proj.date}`;
+  document.getElementById('sD').textContent=(dist/1000).toFixed(2)+'km';
+  document.getElementById('sT').textContent=fmtT(elap);
+  document.getElementById('sN').textContent=notes.length;
+  document.getElementById('sI').textContent=ivs.length;
+  document.getElementById('sF').textContent=surveys.length;
+  if(dbTk.length){const ds=dbTk.map(d=>d.db);document.getElementById('sDb').textContent=Math.round(ds.reduce((a,b)=>a+b,0)/ds.length);}
+  const st=document.getElementById('syncStatus');
+  if(isDbxConnected()){st.innerHTML=`<span style="color:var(--green)">&#10003;</span> 60초마다 자동 동기화 중<br><span style="font-size:10px">Dropbox/앱/WalkingSurvey/${safeFn(proj.name)}/</span>`;}
+  else{st.textContent='Dropbox 미연결 — 로컬에만 저장됨';}
+  setTimeout(renderResultMap,400);
+}
+function dlBlob(b,fn){if(navigator.share&&navigator.canShare){const f=new File([b],fn,{type:b.type});if(navigator.canShare({files:[f]})){navigator.share({files:[f],title:fn}).catch(()=>dlFB(b,fn));return;}}dlFB(b,fn);}
+function dlFB(b,fn){const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=fn;document.body.appendChild(a);a.click();document.body.removeChild(a);setTimeout(()=>URL.revokeObjectURL(u),5000);}
+
+// ═══ CLOUD ═══
+async function dbxUp(blob,path){const tk=await getDbx();if(!tk)return false;try{const r=await fetch('https://content.dropboxapi.com/2/files/upload',{method:'POST',headers:{'Authorization':'Bearer '+tk,'Dropbox-API-Arg':JSON.stringify({path,mode:'overwrite',autorename:false,mute:true}),'Content-Type':'application/octet-stream'},body:blob});return r.ok;}catch(e){return false;}}
+async function cloudSync(){if(!isDbxConnected())return;const f=getFolder();const gj=buildGJ();const b=new Blob([JSON.stringify(gj,null,2)],{type:'application/json'});await dbxUp(b,`${f}/${safeFn(proj.name)}/${safeFn(proj.res)}_${proj.date}.geojson`);}
+async function cloudUpIV(v,i){if(!isDbxConnected())return;const f=getFolder();await dbxUp(v.blob,`${f}/${safeFn(proj.name)}/interviews/${safeFn(proj.res)}_iv${i+1}_${v.role}.${v.ext}`);}
+async function cloudShare(t){if(t==='dropbox'){if(isDbxConnected()){await initCloudFolder();await cloudSync();for(let i=0;i<ivs.length;i++)await cloudUpIV(ivs[i],i);alert('Dropbox 업로드 완료\n'+getFolder()+'/'+safeFn(proj.name)+'/');}else{if(confirm('Dropbox가 연결되지 않았습니다.\n설정으로 이동할까요?'))showSetup();}return;}const gj=buildGJ();const gb=new Blob([JSON.stringify(gj,null,2)],{type:'application/json'});const gf=new File([gb],`${safeFn(proj.name)}_${safeFn(proj.res)}_${proj.date}.geojson`,{type:'application/json'});const fs=[gf];ivs.forEach((v,i)=>fs.push(new File([v.blob],`${safeFn(proj.name)}_iv${i+1}.${v.ext}`,{type:v.blob.type})));if(navigator.share&&navigator.canShare&&navigator.canShare({files:fs})){try{await navigator.share({files:fs,title:proj.name+' 데이터'});return;}catch(e){}}fs.forEach(f=>dlFB(f,f.name));}
+
+// ═══ GOPRO BLE ═══
+const GP_SVC='0000fea6-0000-1000-8000-00805f9b34fb',GP_Q='b5f90076-aa8d-11e3-9046-0002a5d5c51b',GP_QR='b5f90077-aa8d-11e3-9046-0002a5d5c51b';
+async function scanGoPro(){if(typeof navigator.bluetooth==='undefined'){document.getElementById('gpBtn').textContent='BLE 미지원';return;}const sl=cams.find(c=>!c.ok);if(!sl)return;try{sl.dev=await navigator.bluetooth.requestDevice({filters:[{services:[GP_SVC]}],optionalServices:[GP_SVC,'0000180f-0000-1000-8000-00805f9b34fb']});sl.srv=await sl.dev.gatt.connect();sl.nm=sl.dev.name||'CAM '+sl.id;sl.ok=true;const svc=await sl.srv.getPrimaryService(GP_SVC);sl.qc=await svc.getCharacteristic(GP_Q);const rsp=await svc.getCharacteristic(GP_QR);await rsp.startNotifications();rsp.addEventListener('characteristicvaluechanged',e=>{const d=new Uint8Array(e.target.value.buffer);for(let i=3;i<d.length;){if(d[i]===0x0A&&d[i+1]>=1)sl.rec=d[i+2]===1;i+=2+(d[i+1]||1);}updGP();});try{const bs=await sl.srv.getPrimaryService('0000180f-0000-1000-8000-00805f9b34fb');const bc=await bs.getCharacteristic('00002a19-0000-1000-8000-00805f9b34fb');sl.bat=(await bc.readValue()).getUint8(0);}catch(e){}sl.dev.addEventListener('gattserverdisconnected',()=>{sl.ok=false;sl.rec=false;updGP();});updGP();if(!pollI){pollI=setInterval(pollGP,5000);pollGP();}const nx=cams.find(c=>!c.ok);document.getElementById('gpBtn').textContent=nx?'CAM B':'완료';}catch(e){}}
+async function pollGP(){for(const c of cams){if(!c.ok||!c.qc)continue;try{await c.qc.writeValue(new Uint8Array([0x02,0x13,0x0A]));}catch(e){}}}
+function updGP(){cams.forEach(c=>{const p=c.id==='A'?'cA':'cB';document.getElementById(p+'N').textContent=c.nm;document.getElementById(p+'S').textContent=c.ok?(c.rec?'녹화':'대기'):'미연결';document.getElementById(p+'S').style.color=c.rec?'var(--red)':c.ok?'var(--green)':'var(--t3)';document.getElementById(p+'B').textContent=c.bat!==null?c.bat+'%':'--';});}
+
+// ═══ SERVICE WORKER ═══
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(window.navigator.standalone===false)setTimeout(()=>{const b=document.createElement('div');b.style.cssText='position:fixed;bottom:70px;left:12px;right:12px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:12px;z-index:999;display:flex;align-items:center;gap:8px';b.innerHTML='<span style="flex:1">홈 화면에 추가하면 앱처럼 사용 가능합니다</span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--t3);font-size:16px;cursor:pointer">×</button>';document.body.appendChild(b);},3000);
+</script>
+</body>
+</html>
